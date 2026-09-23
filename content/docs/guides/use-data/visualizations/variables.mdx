@@ -10,25 +10,25 @@ Variables can be found in several places throughout the Sentio platform. You mig
 
 * **Inside a Dashboard Panel's SQL Editor:** adding a new panel using the "SQL Chart" option, you will find a **{}Parameters** button located directly below the SQL editing area. This allows you to define temporary **"Custom Variables"** to test and debug your query logic with different parameters before saving the panel.
 
-![](/assets/2ae7e476cf0600288616518595de8413cbbab45c1a2480d7f939da94fb081171-entry-1.gif)
+<img src="/assets/2ae7e476cf0600288616518595de8413cbbab45c1a2480d7f939da94fb081171-entry-1.gif" alt="" className="rounded-lg" style={{ width: '600px' }} />
 
 <br />
 
 * **In the Main Dashboard Settings:** Click the settings icon (⚙️) located in the top-left corner. From the menu that appears, select `Edit Template Variables` option. This is where you configure the behavior of your variables, such as adding predefined options, or setting default values.
 
-![](/assets/ba6e8307675e30ed1deac6951126a09469e4360fe37d1f8425de3fea127286cb-entry-2.gif)
+<img src="/assets/ba6e8307675e30ed1deac6951126a09469e4360fe37d1f8425de3fea127286cb-entry-2.gif" alt="" className="rounded-lg" style={{ width: '600px' }} />
 
 <br />
 
 * **Inside Data Studio's SQL Editor:** The Data Studio provides a sandbox environment for data exploration, and it also supports the use of Custom Variables for dynamic querying. This is ideal for exploratory analysis where you want to quickly run a query with different inputs (like various contract addresses or user IDs) without repeatedly editing the query itself.
 
-![](/assets/7e53a30692f8ef14945ea4f4b354d1e2ac6a23a8210adcceb4119ccb5b179869-entry-3.gif)
+<img src="/assets/7e53a30692f8ef14945ea4f4b354d1e2ac6a23a8210adcceb4119ccb5b179869-entry-3.gif" alt="" className="rounded-lg" style={{ width: '600px' }} />
 
 <br />
 
 * **In the "My Dashboards" Page:**  Navigate to the "My Dashboards" page ([https://dash.sentio.xyz/](https://dash.sentio.xyz/)). Here, you can find an `Edit Template Variables` option for each dashboard. Additionally, clicking `Add Panel` from this page will also take you to the panel editor with its **{}Parameters** button.
 
-![](/assets/5eaafc6e7c9267caacbd2411a701fc5086e5fd2d516e4afbede11cca591883d9-entry-4.gif)
+<img src="/assets/5eaafc6e7c9267caacbd2411a701fc5086e5fd2d516e4afbede11cca591883d9-entry-4.gif" alt="" className="rounded-lg" style={{ width: '600px' }} />
 
 <br />
 
@@ -52,7 +52,7 @@ First, let's create a new panel with an SQL chart. Inside the SQL editor, you ca
 
 * Debug your query. You can change the default value of the Custom Variable in the editor to see the chart update instantly, confirming your logic is correct.
 
-![](/assets/45905212d50324df7023417be2fe7b0870b82c3332db2a0a2ad3dbd1233abb13-step.gif)
+<img src="/assets/45905212d50324df7023417be2fe7b0870b82c3332db2a0a2ad3dbd1233abb13-step.gif" alt="" className="rounded-lg" style={{ width: '800px' }} />
 
 <br />
 
@@ -68,7 +68,7 @@ Importantly, the way you reference the variable in your saved query changes. The
 * **Old Reference (Custom Variable):** `${pair_name}`
 * **New Reference (Template Variable):** `$pair_name`
 
-![](/assets/f7deac6a9e83f6482d50da4987527e4e85d17253b0af5b282381b888125229da-save.gif)
+<img src="/assets/f7deac6a9e83f6482d50da4987527e4e85d17253b0af5b282381b888125229da-save.gif" alt="" className="rounded-lg" style={{ width: '800px' }} />
 
 <br />
 
@@ -89,7 +89,7 @@ Now that the variable exists at the dashboard level, you can further configure i
 >
 > This distinction is crucial for ensuring your variables function correctly both during the debugging phase in the editor and in the final interactive dashboard.
 
-![](/assets/ca8fe14c6cebcbab81f54ba1a7ba9d28596dfda7d5ce9970ed15d01b24412515-set-options.gif)
+<img src="/assets/ca8fe14c6cebcbab81f54ba1a7ba9d28596dfda7d5ce9970ed15d01b24412515-set-options.gif" alt="" className="rounded-lg" style={{ width: '800px' }} />
 
 <br />
 
@@ -98,7 +98,7 @@ Now that the variable exists at the dashboard level, you can further configure i
 Return to your dashboard. You will now see a dropdown menu at the top labeled "pair\_name" (or whatever label you provided).\
 When you select a different token from the dropdown, the panel's chart will instantly refresh to display data for the newly selected token contract.
 
-![](/assets/483e4ded9c6a43080560db5ae99ade9ddcdd4dcfc83643cbd69747fac13a7ac2-see-actions.gif)
+<img src="/assets/483e4ded9c6a43080560db5ae99ade9ddcdd4dcfc83643cbd69747fac13a7ac2-see-actions.gif" alt="" className="rounded-lg" style={{ width: '800px' }} />
 
 <br />
 
@@ -116,7 +116,7 @@ Instead of starting in the panel editor, we'll begin at the dashboard level.
 >
 > Sentio will automatically populate the dropdown options with all unique values for that attribute found in your database. You do not need to manually configure options or a default value. The resulting dropdown menu will also be searchable, making it easy to find values in long lists.
 
-![](/assets/9f01a4bf0396bf838d6a2693817a538208af6c945fe61e4f9a9de44189fdeec9-method2-add-var.gif)
+<img src="/assets/9f01a4bf0396bf838d6a2693817a538208af6c945fe61e4f9a9de44189fdeec9-method2-add-var.gif" alt="" className="rounded-lg" style={{ width: '800px' }} />
 
 <br />
 
@@ -129,7 +129,7 @@ Now, let's create a panel that uses our new variable.
 * Instead of entering a static value (like "USDC"), you can now select the Template Variable you just created directly from the value input field.
 * Configure the rest of your analysis using the Insight panel's UI and save the panel (e.g., select your desired time granularity, such as Daily, Weekly, or Hourly).
 
-![](/assets/829c5979c675b06d1e84ba055b17997958aea11916742d7c45b03cc6123dea00-method2-add-panel.gif)
+<img src="/assets/829c5979c675b06d1e84ba055b17997958aea11916742d7c45b03cc6123dea00-method2-add-panel.gif" alt="" className="rounded-lg" style={{ width: '800px' }} />
 
 <br />
 
@@ -137,7 +137,7 @@ Now, let's create a panel that uses our new variable.
 
 Just like with the first method, your new Insight panel is now fully interactive. The panel's data is dynamically controlled by the `pair_name` dropdown menu at the top of your dashboard.
 
-![](/assets/a1a310c1692b9d698b841052783b76826874962648ffac8a9b800bc09a52b9f5-method2-see-action.gif)
+<img src="/assets/a1a310c1692b9d698b841052783b76826874962648ffac8a9b800bc09a52b9f5-method2-see-action.gif" alt="" className="rounded-lg" style={{ width: '800px' }} />
 
 <br />
 
@@ -148,4 +148,4 @@ Just like with the first method, your new Insight panel is now fully interactive
 * **Reminder on Quotes:** Remember to wrap default text values in single quotes ('...') only when defining a temporary Custom Variable in the panel editor, not when setting the final Template Variable in the dashboard settings.
 * **Built-in Time Variables (`$startTime`, `$endTime`):** When writing queries in the SQL Chart editor, you have access to two pre-defined System Variables: `$startTime` and `$endTime`. These automatically correspond to the start and end of the time range selected in your dashboard's global date picker, allowing your charts to be time-aware without needing a separate time-based Template Variable. For a precise definition, simply hover over the information icon (?) within the editor.
 
-![](/assets/2816fa23bfe27025bc06582272fbe92ea80d31b02f90b9cffa8e740b3b647943-system-var.gif)
+<img src="/assets/2816fa23bfe27025bc06582272fbe92ea80d31b02f90b9cffa8e740b3b647943-system-var.gif" alt="" className="rounded-lg" style={{ width: '800px' }} />

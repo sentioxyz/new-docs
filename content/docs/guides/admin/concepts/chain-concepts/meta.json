@@ -1,7 +1,6 @@
 {
   "title": "Chain Concepts",
   "pages": [
-    "overview",
     "evm_deprecate",
     "concepts-aptos",
     "solana-deprecated"

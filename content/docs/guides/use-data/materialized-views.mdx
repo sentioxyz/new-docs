@@ -25,7 +25,7 @@ Let's say you are using a Sentio processor to monitor [Coinbase's cbETH token](h
 
 If you have millions of transfer events, calculating these summaries directly from the raw event log table (e.g., `Transfer`) every time the dashboard loads can be very slow.
 
-![](/assets/bc6003d1a7763796deb6eaed15f112ceb541e372ebed56299eb1c73f2adab44b-image.png)
+<img src="/assets/bc6003d1a7763796deb6eaed15f112ceb541e372ebed56299eb1c73f2adab44b-image.png" alt="" className="rounded-lg" style={{ width: '600px' }} />
 
 **Solution**: Create a Materialized View to pre-calculate these daily summaries.
 
@@ -33,23 +33,23 @@ Here's how you can do it in Sentio:
 
 1. **Define Query:** Enter the SQL query that defines the data you want to materialize, and just **Click** `Save View` to create a materialized view.
 
-![](/assets/42509570921fee3aa3dfaaacfe0ce4a1d18daec2b1e5f2dfbbd92b0e25e8d674-image.png)
+<img src="/assets/42509570921fee3aa3dfaaacfe0ce4a1d18daec2b1e5f2dfbbd92b0e25e8d674-image.png" alt="" className="rounded-lg" style={{ width: '600px' }} />
 
 2. **Configure Refresh:** Set up the refresh schedule (e.g., how often the view should be updated with new data from the source table).
 
-![](/assets/60b5dbb0b0c0254094d05b815ef1589cfba90aca54671c8c79e91e503a9a3521-image.png)
+<img src="/assets/60b5dbb0b0c0254094d05b815ef1589cfba90aca54671c8c79e91e503a9a3521-image.png" alt="" className="rounded-lg" style={{ width: '600px' }} />
 
 3. **Create & Verify:** Submit the view creation request and wait for it to complete. You should see the new MV listed once it's ready.
 
-![](/assets/4dc4cd4764530e800c1b81515d7ada89ed13f3c63449a98f3a9eaa6afbd5874e-image.png)
+<img src="/assets/4dc4cd4764530e800c1b81515d7ada89ed13f3c63449a98f3a9eaa6afbd5874e-image.png" alt="" className="rounded-lg" style={{ width: '600px' }} />
 
 4. **Utilize:** Now, your dashboard doesn't need to run the slow, complex query on the potentially huge source table. Instead, it can run a super-fast query against the small, pre-aggregated Materialized View.
 
-![](/assets/ce7860715e5c9ef014104d10c9a00ae21ff6c3820fd159e3f2146ba2f4ce03aa-image.png)
+<img src="/assets/ce7860715e5c9ef014104d10c9a00ae21ff6c3820fd159e3f2146ba2f4ce03aa-image.png" alt="" className="rounded-lg" style={{ width: '600px' }} />
 
 5. **Update MV (Optional):** You can also modify the query or refresh settings later by clicking the edit icon if needed.
 
-![](/assets/3456caed385785285fe26e7a2fc459a32753a2f0820fc86dd05d5b1461c90df1-image.png)
+<img src="/assets/3456caed385785285fe26e7a2fc459a32753a2f0820fc86dd05d5b1461c90df1-image.png" alt="" className="rounded-lg" style={{ width: '600px' }} />
 
 ## When to Use Materialized Views
 

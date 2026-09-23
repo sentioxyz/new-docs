@@ -1,7 +1,6 @@
 {
   "title": "💻 Development and Testing",
   "pages": [
-    "overview",
     "web-ide",
     "cli-reference"
   ]

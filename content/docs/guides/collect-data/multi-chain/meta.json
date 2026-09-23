@@ -1,7 +1,6 @@
 {
   "title": "🪙 Chain Specifics",
   "pages": [
-    "overview",
     "evm",
     "aptos",
     "sui",

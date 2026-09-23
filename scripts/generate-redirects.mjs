@@ -1,6 +1,6 @@
 /**
  * Builds lib/legacy-redirects.json, which maps the old ReadMe URLs to the new pages:
- *   /docs/<slug>      -> /guides/... or /ai/...   (slug = file name; a folder's overview.mdx uses the folder name)
+ *   /docs/<slug>      -> /guides/... or /ai/...   (slug = file name; a folder's index.mdx / overview.mdx uses the folder name)
  *   /reference/<slug> -> /api/<group>/<page>      (slug = lowercased operationId, optionally with a "-1" suffix)
  * proxy.ts looks paths up in this table. Run after migrate.mjs and generate-api*.mjs.
  *
@@ -34,14 +34,19 @@ const walk = (dir) =>
     return e.isDirectory() ? walk(p) : [p];
   });
 
-const urlOf = (file) => '/' + path.relative(DOCS, file).replace(/\.mdx$/, '').split(path.sep).join('/');
+const urlOf = (file) =>
+  '/' + path.relative(DOCS, file).replace(/(\/index)?\.mdx$/, '').split(path.sep).join('/');
 
 const docs = {};
 for (const tab of ['guides', 'ai']) {
   for (const file of walk(path.join(DOCS, tab))) {
-    if (!file.endsWith('.mdx') || path.basename(file) === 'index.mdx') continue;
+    if (!file.endsWith('.mdx')) continue;
     let slug = path.basename(file, '.mdx');
-    if (slug === 'overview') slug = path.basename(path.dirname(file));
+    if (slug === 'index' || slug === 'overview') {
+      // The tab root's index.mdx is not a ReadMe page
+      if (path.dirname(file) === path.join(DOCS, tab)) continue;
+      slug = path.basename(path.dirname(file));
+    }
     if (docs[slug]) throw new Error(`Duplicate slug "${slug}": ${docs[slug]} and ${urlOf(file)}`);
     docs[slug] = urlOf(file);
   }

@@ -180,6 +180,15 @@ console.log(
 
 /* ---------- 4. Rewrite references ---------- */
 
+/**
+ * ReadMe <Image width="30%"> / width="600px" -> <img> with that width (markdown images
+ * can't carry one). Returns null when there is no explicit width.
+ */
+const imageWithWidth = (src, alt, width) =>
+  width && width !== 'auto'
+    ? `<img src="${src}" alt=${JSON.stringify(alt)} className="rounded-lg" style={{ width: '${width}' }} />`
+    : null;
+
 function mapUrl(u) {
   // Sources contain escaped parens like image%20\(4\).png; strip backslashes before lookup
   const norm = (s) => decodeURIComponent(s).replace(/\\/g, '').toLowerCase();
@@ -213,8 +222,10 @@ function rewrite(body) {
   t = t.replace(/<Image([\s\S]*?)\/>/g, (m, attrs) => {
     const src = (m.match(/src="([^"]+)"/) || [])[1] || '';
     const caption = (m.match(/caption="([^"]*)"/) || [])[1] || '';
+    const width = ((m.match(/width="([^"]*)"/) || [])[1] || '').trim();
     const n = mapUrl(src);
-    return n ? `![${caption}](${n})` : m;
+    if (!n) return m;
+    return imageWithWidth(n, caption, width) ?? `![${caption}](${n})`;
   });
   // Unwrap ReadMe <Table align={[...]}>; the content is already a plain HTML table
   t = t.replace(/<Table[^>]*>/g, '').replace(/<\/Table>/g, '');
@@ -270,9 +281,11 @@ function rewrite(body) {
 /* ---------- 5. Migrate docs ---------- */
 
 /**
- * Folders get no index.mdx because they render as static group titles
- * (see components/sentio-sidebar-group.tsx), so:
- *   - a source index.md becomes overview.mdx, the first item in the group;
+ * Folder landing pages (see components/sentio-sidebar-group.tsx):
+ *   - top-level groups render as static titles with no route of their own, so a
+ *     source index.md becomes overview.mdx, the first item in the group;
+ *   - nested groups are collapsible links, so index.md becomes the folder's own
+ *     index.mdx, titled like the folder;
  *   - an index.md with only headings/images is dropped (no empty pages).
  */
 
@@ -301,6 +314,17 @@ function migrateDir(srcDir, outDir, skip = new Set()) {
   const relOut = path.relative(DOCS_OUT, outDir);
   // Tab root pages (guides / ai) are generated in step 8; don't overwrite them with index.md
   const isTabRoot = relOut === 'guides' || relOut === 'ai';
+  // tab/group/subgroup and deeper
+  const isNested = relOut.split(path.sep).length >= 3;
+
+  // Title: the source index.md title, else the directory name
+  let folderTitle = path.basename(srcDir);
+  const ownIndex = path.join(srcDir, 'index.md');
+  if (fs.existsSync(ownIndex)) {
+    const t = (parseFM(fs.readFileSync(ownIndex, 'utf8')).title || '').trim();
+    if (t) folderTitle = t;
+  }
+  folderTitle = TITLE_OVERRIDES[relOut] || folderTitle;
 
   for (const e of entries) {
     if (skip.has(e.name)) continue;
@@ -317,8 +341,9 @@ function migrateDir(srcDir, outDir, skip = new Set()) {
     const isDirIndex = base === 'index';
     if (isDirIndex && (isTabRoot || !hasRealText(body))) continue;
 
-    const outName = isDirIndex ? 'overview.mdx' : `${base}.mdx`;
-    const fm = [`title: ${JSON.stringify(isDirIndex ? 'Overview' : title || base)}`];
+    const outName = !isDirIndex ? `${base}.mdx` : isNested ? 'index.mdx' : 'overview.mdx';
+    const pageTitle = !isDirIndex ? title || base : isNested ? folderTitle : 'Overview';
+    const fm = [`title: ${JSON.stringify(pageTitle)}`];
     if (description) fm.push(`description: ${JSON.stringify(description)}`);
     fs.writeFileSync(
       path.join(outDir, outName),
@@ -335,7 +360,7 @@ function migrateDir(srcDir, outDir, skip = new Set()) {
     const files = [];
     for (const e of entries) {
       if (skip.has(e.name) || hidden.has(slug(e.name))) continue;
-      // index already became overview.mdx
+      // index.md already became index.mdx / overview.mdx
       if (slug(e.name) === 'index') continue;
       if (e.isDirectory()) dirs.push(slug(e.name));
       else if (e.name.endsWith('.md')) files.push(slug(e.name));
@@ -360,18 +385,9 @@ function migrateDir(srcDir, outDir, skip = new Set()) {
     pages = ['overview', ...pages.filter((p) => p !== 'overview')];
   }
 
-  // Title: the source index.md title, else the directory name
-  let title = path.basename(srcDir);
-  const ownIndex = path.join(srcDir, 'index.md');
-  if (fs.existsSync(ownIndex)) {
-    const t = (parseFM(fs.readFileSync(ownIndex, 'utf8')).title || '').trim();
-    if (t) title = t;
-  }
-  title = TITLE_OVERRIDES[relOut] || title;
-
   fs.writeFileSync(
     path.join(outDir, 'meta.json'),
-    JSON.stringify({ title, pages }, null, 2) + '\n'
+    JSON.stringify({ title: folderTitle, pages }, null, 2) + '\n'
   );
 }
 
@@ -488,6 +504,7 @@ function firstLeaf(dir) {
   for (const p of meta.pages || []) {
     const child = path.join(dir, p);
     if (fs.existsSync(child) && fs.statSync(child).isDirectory()) {
+      if (fs.existsSync(path.join(child, 'index.mdx'))) return p;
       const got = firstLeaf(child);
       if (got) return `${p}/${got}`;
     } else if (fs.existsSync(path.join(dir, `${p}.mdx`))) {

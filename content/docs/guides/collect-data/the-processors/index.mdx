@@ -1,5 +1,5 @@
 ---
-title: "Overview"
+title: "🧠 Processors"
 description: "Learn about the two ways Sentio collects on-chain data native Sentio Processors and Hosted Subgraphs. "
 ---
 
@@ -17,7 +17,7 @@ At the heart of Sentio is the **Processor**. A Processor is typically a TypeScri
 2. **Triggers and Handlers (How to react):** What to perform when specific events happen.
 3. **Data Type (What to output):** How to record or export the data
 
-![](/assets/dd943b2d7099ff70ccfc2d7c36c794b4b5a9812e406ab7fa94e245342afff59e-image.png)
+<img src="/assets/dd943b2d7099ff70ccfc2d7c36c794b4b5a9812e406ab7fa94e245342afff59e-image.png" alt="" className="rounded-lg" style={{ width: '600px' }} />
 
 ## Event-Driven Architecture
 
@@ -45,12 +45,18 @@ ERC20Processor.bind({ address: '0xSomeTokenAddress', network: EthChainId.ETHEREU
 
 While Sentio processor provides maximum performance and flexibility, we also support hosted-subgraph that still has many features like SQL/GraphQL API, analytic dashboard, and multi-versioning. This allows you to easily run data pipelines on Sentio without writing new code. Both run on Sentio's infrastructure but differ in their development approach and capabilities:
 
-### **[Sentio Processor (Recommended)](/guides/collect-data/the-processors/processor-engine):**
+### Sentio Processor (Recommended)
+
+See [Sentio Processor](/guides/collect-data/the-processors/processor-engine) for details.
+
    * The native, recommended approach using the Sentio TypeScript SDK.
    * Offers maximum flexibility, performance, and access to all Sentio features (advanced handlers, state management, diverse outputs).
    * Ideal for new projects or when requiring custom logic beyond standard subgraph capabilities.
 
-### **[Hosted Subgraph](/guides/collect-data/the-processors/hosted-subgraphs):**
+### Hosted Subgraph
+
+See [Hosted Subgraph](/guides/collect-data/the-processors/hosted-subgraphs) for details.
+
    * Supports deploying standard Subgraphs developed for The Graph ecosystem.
    * Allows leveraging existing Subgraph codebases on Sentio infrastructure.
    * Benefits from Sentio platform features like SQL API, dashboards, and versioning on top of the indexed data.

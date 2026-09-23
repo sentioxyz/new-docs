@@ -1,7 +1,6 @@
 {
   "title": "🔎 Debugger",
   "pages": [
-    "overview",
     "function-only-mode",
     "single-step-mode"
   ]

@@ -760,6 +760,12 @@ body::after {
   transform: none;
 }
 
+/* Images sit on their own line (none are inline with text), so center them */
+.prose img {
+  display: block;
+  margin-inline: auto;
+}
+
 .prose strong {
   color: var(--s-fg-strong);
   font-weight: 600;
