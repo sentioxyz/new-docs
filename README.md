@@ -41,6 +41,20 @@ node scripts/generate-redirects.mjs      # lib/legacy-redirects.json (/docs/*, /
 node scripts/migrate-changelog.mjs       # changelog posts from docs.sentio.xyz
 ```
 
+## Deploy
+
+The site runs on Cloudflare Workers via [OpenNext](https://opennext.js.org/cloudflare)
+(Worker name `test-docs`, see `wrangler.jsonc`). Every push to `main` deploys through
+`.github/workflows/deploy.yml`, which needs the `CLOUDFLARE_API_TOKEN` and
+`CLOUDFLARE_ACCOUNT_ID` repository secrets.
+
+```bash
+npm run preview   # build and serve locally in the Workers runtime
+npm run deploy    # build and deploy (needs `wrangler login` or CLOUDFLARE_API_TOKEN)
+```
+
+Workers static assets are limited to 25 MiB per file, so keep files in `public/` below that.
+
 ### Fumadocs MDX
 
 Collections are defined with the [Macro API](https://fumadocs.dev/docs/mdx/macro) in `lib/source.ts`.
