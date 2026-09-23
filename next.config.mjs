@@ -27,7 +27,6 @@ const config = {
       // Tab roots open their first page (keep in sync with SENTIO_TABS in lib/shared.ts)
       { source: '/', destination: '/guides/introduction/readme', permanent: false },
       { source: '/guides', destination: '/guides/introduction/readme', permanent: false },
-      { source: '/ai', destination: '/ai/features-overview', permanent: false },
       // Old ReadMe URLs (/docs/*, /reference/*) are redirected in proxy.ts
     ];
   },

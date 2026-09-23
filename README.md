@@ -34,7 +34,7 @@ In the project, you can see:
 run the scripts in this order (each one depends on the output of the previous ones):
 
 ```bash
-node scripts/migrate.mjs [source-dir]    # guides + ai tabs from the ReadMe docs repo
+node scripts/migrate.mjs [source-dir]    # guides tab from the ReadMe docs repo
 node scripts/generate-api.mjs            # API pages from content/docs/api/openapi.json
 node scripts/generate-api-index.mjs      # API group titles + overview page
 node scripts/generate-redirects.mjs      # lib/legacy-redirects.json (/docs/*, /reference/* -> new pages)

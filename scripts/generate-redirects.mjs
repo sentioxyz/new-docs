@@ -1,6 +1,6 @@
 /**
  * Builds lib/legacy-redirects.json, which maps the old ReadMe URLs to the new pages:
- *   /docs/<slug>      -> /guides/... or /ai/...   (slug = file name; a folder's index.mdx / overview.mdx uses the folder name)
+ *   /docs/<slug>      -> /guides/...              (slug = file name; a folder's index.mdx / overview.mdx uses the folder name)
  *   /reference/<slug> -> /api/<group>/<page>      (slug = lowercased operationId, optionally with a "-1" suffix)
  * proxy.ts looks paths up in this table. Run after migrate.mjs and generate-api*.mjs.
  *
@@ -38,7 +38,7 @@ const urlOf = (file) =>
   '/' + path.relative(DOCS, file).replace(/(\/index)?\.mdx$/, '').split(path.sep).join('/');
 
 const docs = {};
-for (const tab of ['guides', 'ai']) {
+for (const tab of ['guides']) {
   for (const file of walk(path.join(DOCS, tab))) {
     if (!file.endsWith('.mdx')) continue;
     let slug = path.basename(file, '.mdx');

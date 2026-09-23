@@ -9,12 +9,11 @@ export const docsContentRoute = '/llms.mdx';
 
 /**
  * Top nav tabs; each maps to a `root: true` folder under content/docs.
- * Guides and AI link straight to their first page (see also the redirects in next.config.mjs).
+ * Guides links straight to its first page (see also the redirects in next.config.mjs).
  */
 export const SENTIO_TABS = [
   { title: 'Guides', url: '/guides/introduction/readme' },
   { title: 'API Reference', url: '/api' },
-  { title: 'AI', url: '/ai/features-overview' },
   { title: 'Changelog', url: '/changelog' },
 ] as const;
 

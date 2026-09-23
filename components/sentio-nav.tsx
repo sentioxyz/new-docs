@@ -7,7 +7,6 @@ import {
   BookOpen,
   Code2,
   History,
-  Sparkles,
 } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { SentioLogo } from '@/components/sentio-logo';
@@ -21,7 +20,6 @@ export interface SentioTab {
 const TAB_ICONS: Record<string, ReactNode> = {
   api: <Code2 className="size-4" />,
   guides: <BookOpen className="size-4" />,
-  ai: <Sparkles className="size-4" />,
   changelog: <History className="size-4" />,
 };
 

@@ -312,8 +312,8 @@ function migrateDir(srcDir, outDir, skip = new Set()) {
   const hidden = new Set();
   const skipSlugs = new Set([...skip].map((s) => slug(s)));
   const relOut = path.relative(DOCS_OUT, outDir);
-  // Tab root pages (guides / ai) are generated in step 8; don't overwrite them with index.md
-  const isTabRoot = relOut === 'guides' || relOut === 'ai';
+  // The Guides tab root page is generated in step 8; don't overwrite them with index.md
+  const isTabRoot = relOut === 'guides';
   // tab/group/subgroup and deeper
   const isNested = relOut.split(path.sep).length >= 3;
 
@@ -393,17 +393,13 @@ function migrateDir(srcDir, outDir, skip = new Set()) {
 
 /* ---------- 5b. Split content into tabs ---------- */
 
-// Four tabs (Fumadocs root folders):
+// Three tabs (Fumadocs root folders):
 //   api       → API Reference
-//   guides    → Guides
-//   ai        → AI
+//   guides    → Guides (including the AI group)
 //   changelog → Changelog
 const guidesOut = path.join(DOCS_OUT, 'guides');
-const aiOut = path.join(DOCS_OUT, 'ai');
 
-// Guides = source docs/ minus AI, which gets its own tab
-migrateDir(path.join(SRC, 'docs'), guidesOut, new Set(['AI']));
-migrateDir(path.join(SRC, 'docs', 'AI'), aiOut);
+migrateDir(path.join(SRC, 'docs'), guidesOut);
 
 /**
  * Flatten redundant same-name nesting such as Integrations/Integrations, which
@@ -435,10 +431,7 @@ function collapseRedundantNesting(dir) {
 
 collapseRedundantNesting(guidesOut);
 
-console.log(
-  `Migrated docs: guides ${walk(guidesOut).filter((f) => f.endsWith('.mdx')).length} / ` +
-    `ai ${walk(aiOut).filter((f) => f.endsWith('.mdx')).length}`
-);
+console.log(`Migrated docs: guides ${walk(guidesOut).filter((f) => f.endsWith('.mdx')).length}`);
 
 /* ---------- 6. changelog ---------- */
 
@@ -489,7 +482,6 @@ const titleOfFile = (file) => {
 
 const TAB_INTRO = {
   guides: 'The complete Sentio documentation: collecting on-chain data, then processing, consuming, and visualizing it.',
-  ai: 'Query data, build dashboards, and generate processors in natural language.',
   changelog: 'Release notes and breaking changes.',
 };
 
@@ -552,14 +544,13 @@ function writeDirIndex(dir, relRoot) {
   );
 }
 
-// Guides: root folder, pages from the source _order.yaml minus AI
+// Guides: root folder, pages from the source _order.yaml
 const guidesOrder = fs
   .readFileSync(path.join(SRC, 'docs/_order.yaml'), 'utf8')
   .split('\n')
   .map((l) => l.trim())
   .filter((l) => l.startsWith('- '))
-  .map((l) => slug(l.slice(2).trim()))
-  .filter((n) => n !== 'ai');
+  .map((l) => slug(l.slice(2).trim()));
 
 const guidesMeta = JSON.parse(fs.readFileSync(path.join(guidesOut, 'meta.json'), 'utf8'));
 fs.writeFileSync(
@@ -577,25 +568,8 @@ fs.writeFileSync(
   ) + '\n'
 );
 
-// AI: root folder
-const aiMeta = JSON.parse(fs.readFileSync(path.join(aiOut, 'meta.json'), 'utf8'));
-fs.writeFileSync(
-  path.join(aiOut, 'meta.json'),
-  JSON.stringify(
-    {
-      title: 'AI',
-      description: 'AI capabilities built into Sentio',
-      root: true,
-      pagesIndex: 'index',
-      pages: aiMeta.pages,
-    },
-    null,
-    2
-  ) + '\n'
-);
-
-// Index pages for guides / ai / changelog (api's comes from generate-api-index.mjs)
-for (const tab of ['guides', 'ai', 'changelog']) {
+// Index pages for guides / changelog (api's comes from generate-api-index.mjs)
+for (const tab of ['guides', 'changelog']) {
   writeDirIndex(path.join(DOCS_OUT, tab), path.join(DOCS_OUT, tab));
 }
 console.log('Generated tab index pages');
@@ -603,7 +577,7 @@ console.log('Generated tab index pages');
 // Root meta.json: tab order
 fs.writeFileSync(
   path.join(DOCS_OUT, 'meta.json'),
-  JSON.stringify({ pages: ['api', 'guides', 'ai', 'changelog'] }, null, 2) + '\n'
+  JSON.stringify({ pages: ['api', 'guides', 'changelog'] }, null, 2) + '\n'
 );
 
 /* ---------- 9. ReadMe doc:slug links -> local paths ---------- */
@@ -656,5 +630,5 @@ console.log(
   `doc: links converted: ${linkFixed}${linkMissed ? `, ${linkMissed} unresolved (${[...missed].join(', ')})` : ''}`
 );
 
-console.log('Tabs: api (API Reference) / guides (Guides) / ai (AI) / changelog (Changelog)');
+console.log('Tabs: api (API Reference) / guides (Guides) / changelog (Changelog)');
 console.log('Migration complete');

@@ -1,8 +1,5 @@
 {
   "title": "AI",
-  "description": "AI capabilities built into Sentio",
-  "root": true,
-  "pagesIndex": "index",
   "pages": [
     "features-overview",
     "ai-skills",
