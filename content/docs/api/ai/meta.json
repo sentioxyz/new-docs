@@ -1,0 +1,9 @@
+{
+  "title": "AI",
+  "pages": [
+    "create-chat-session",
+    "query-chat-session",
+    "post-session-message",
+    "healthz"
+  ]
+}

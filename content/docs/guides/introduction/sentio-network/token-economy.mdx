@@ -1,0 +1,84 @@
+---
+title: "Tokenomics"
+---
+
+## Sentio Token ($ST)
+
+The **Sentio Token ($ST)** serves as the native utility and governance asset of the protocol:
+
+1. **Payment**: To access blockchain data, users consume Sentio Units (SU), settled via $ST. Payments are distributed at the protocol level to network participants, including node operators and stakers. A small portion of each payment may be burned as part of the network's economic balancing mechanism.
+
+2. **Staking**: Sentio Nodes stake $ST tokens to qualify for network participation. Token holders may also delegate their stake to node operators. Misbehavior is penalized through slashing (deducting and burning the stake).
+
+3. **Governance**: $ST token holders can vote on protocol-level parameters and upgrades, promoting decentralized community governance for the network.
+
+Sentio Token is deployed at both [Ethereum](https://etherscan.io/token/0x70BE40667385500c5da7f108a022E21B606045DD) and [BSC](https://bscscan.com/token/0x70BE40667385500c5da7f108a022E21B606045DD), and can be bridged natively through OFT. All tokens all initially minted on BSC.
+
+Once Sentio mainnet launched, Sentio Token will be able to be bridged between Ethereum and Sentio mainnet through Optimism native bridge.
+
+Bridge UI could be found at: https://network.sentio.xyz/bridge
+
+## Sentio Units (SU)
+
+Sentio introduces **Sentio Units (SU)** as the standardized billing abstraction across all network services. All usage is metered in SU.
+
+**Initial cost parameters** (subject to node voting):
+
+| Service                           | Cost                                   |
+| --------------------------------- | -------------------------------------- |
+| **Indexing** (per new data point) | 4,000 SU                               |
+| **Queries** (per query)           | 1,000 – 2,000 SU (based on complexity) |
+| **Node RPC Call** (per call)      | 20 SU                                  |
+
+Nodes bid on the cost of SU in $ST, and jobs are preferentially assigned to nodes with a lower SU cost.
+
+**Key benefits:**
+
+* **Transparent Pricing** — SU rates are fixed by on-chain governance, ensuring predictability for developers.
+* **Flexibility** — Indexers can set their own SU-to-Token exchange rate, enabling market-driven efficiency.
+* **Extensibility** — New service types (e.g., cross-chain queries, AI analytics) can be priced in SU without altering the underlying token model.
+
+## Job Assignment
+
+Job assignment is determined by two factors: **stake** and **SU cost**.
+
+A node's capacity allowance is calculated as:
+
+```
+Allowance_i = (Stakes_i / Total_stakes) × Total_SU_Consumed_Last_Hour
+```
+
+A node will stop receiving new jobs if its current job count is greater than or equal to its allowance, regardless of its SU cost.
+
+For nodes with available capacity and sufficient hardware resources (as configured by the node operator), job assignment favors the one offering the **lowest SU cost**. Once a job is assigned, the SU cost is locked for that processor for one month.
+
+## Staking Model
+
+| Participant      | Mechanism                                                                        |
+| ---------------- | -------------------------------------------------------------------------------- |
+| **Sentio Nodes** | Must stake $ST to join the network; slashing applies for misbehavior             |
+| **Delegators**   | Delegate $ST to Sentio Nodes and share revenue; commission retained by operators |
+
+For details on epoch-based staking and governance voting, see [Network Participation](/guides/introduction/sentio-network/network-participation).
+
+## Incentives
+
+| Participant              | Reward                                                         |
+| ------------------------ | -------------------------------------------------------------- |
+| **Sentio Nodes**         | Earn SU for indexing and serving queries                       |
+| **Stakers / Delegators** | Share in Sentio Nodes' revenue proportional to delegated stake |
+
+## Token Distribution
+
+Total supply: **1,000,000,000 $ST**. The allocation is designed to balance long-term ecosystem sustainability with early contributor rewards.
+
+* **Ecosystem (35.00%)**: Reserved for grants, developer programs, future product development, and long-term ecosystem growth initiatives.
+* **Airdrop & Marketing (18.90%)**: Distributed through campaigns and airdrops to grow the community.
+* **Network Incentive (10.00%)**: Allocated to reward early network participants who contribute to bootstrapping the decentralized infrastructure, such as running Sentio Nodes during the initial network phase.
+* **Early Backers (17.00%)**: Allocated to initial investors who supported the project's early development and vision.
+* **Team (15.00%)**: Reserved for core team members and key contributors driving the ongoing development of the Sentio platform and network.
+* **Liquidity (4.10%)**: Set aside for market making and exchange liquidity to ensure healthy token trading conditions.
+
+Unlock schedule could be found at [CMC](https://coinmarketcap.com/currencies/sentio/#token_unlocks).
+
+<br />

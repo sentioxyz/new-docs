@@ -1,0 +1,192 @@
+---
+title: "Access the Network"
+---
+
+This page covers the operational steps for using Sentio Network. For the design of the layers themselves, see [Compute Network](compute-network) and [Storage Network](storage-network).
+
+You can access Sentio Network through the fully managed Sentio Platform, or directly via on-chain calls.
+
+# Access through Sentio Platform
+
+The easiest way to use Sentio Network is through [Sentio Platform](https://app.sentio.xyz/). Create a Sentio project with Sentio Network (currently testnet) as its host environment — your processor or subgraph runs on the Compute Network and stores data on the Storage Network, with billing delegated to Sentio Platform.
+
+
+![](/assets/3ea0a7aa4300f1f66f7a7b752d13551a3e089248fa5d891c40dbc18088d27bb3-image.png)
+
+
+**Note**: The host environment can only be configured at project creation and **cannot be modified afterward**.
+
+
+![](/assets/87cfa5c84c9f378ffcd70e9e7ebb4d980d791103d721cb41f933c83ce25d256d-image.png)
+
+
+Follow the Guide in UI to create and upload your processor.
+
+# Access Directly
+
+Direct access gives you more control but loses platform benefits like version control and UI (it's on our roadmap). The flow is:
+
+1. Fund your Billing balance.
+2. _(Recommended)_ Add operator keys.
+3. Upload your processor bundle and start it on-chain.
+4. Connect a query client through the sidecar.
+
+## Step 1: Fund your Billing balance
+
+Fees are pulled from balances in the `Billing` contract:
+
+- **Indexing fees** are charged to the processor **owner**.
+- **Query fees** are charged to the **query initiator**.
+
+You can use [Network Hub](https://testnet-network.sentio.xyz/billing) to deposit $ST tokens.
+
+
+![](/assets/6f1b44c579c7fd1ab579517423426cdecc29db3047cddb48e3bfd2133dc7b426-image.png)
+
+
+## Step 2: Add an operator (optional)
+
+Adding another address as your operator gives it two powers on your behalf:
+
+- It can manage your processors — create, start, and stop them under your ownership.
+- Queries it signs can be billed to **your** Billing balance instead of its own.
+
+Use Manage Operator in Network Hub to add account of your control.
+
+
+![](/assets/e4df4bb6fa400ff9c8d2f7749dc840e7256a8666dcf96f5f1e45bdefb5268c15-image.png)
+
+
+<br />
+
+
+![](/assets/be39eb014eef627a9e759fe850f67ee05442ba7bc1a7a475cfd52420847ab769-image.png)
+
+
+## Step 3: Upload, create, and start the processor
+
+Create an empty Sentio project locally or using your existed project.
+
+```
+npx @sentio/cli@latest create example-project
+cd example-project
+```
+
+Then upload processor with your operator private key (recommended) or private key
+
+```text With Operator Key
+PRIVATE_KEY=<OPERATOR_PRIVATE_KEY> \
+yarn sentio upload --sentio-network testnet --required-chain-id 1 --no-platform --owner=<OWNER_PUBLIC_KEY>
+
+# Limitation: you need also transfer a small amount of native $ST to your operator address (for gas)
+# though this limitation will be lift soon, we'll only require ST be deposited into Billing contract
+
+```
+```shell With Owner Key
+PRIVATE_KEY=<OWNER_PRIVATE_KEY> \
+  yarn sentio upload --sentio-network testnet --required-chain-id 1 --no-platform 
+```
+
+Pass one `--required-chain-id` per chain your processor reads. The CLI prints the resolved contract addresses, your wallet's ST + Billing balance, asks for confirmation, then runs:
+
+1. `tsup` packages `src/processor.ts` into `dist/lib.js`.
+2. The bundle is pinned to IPFS via `https://api.sentio.xyz/v1/ipfs/add`, returning a CID.
+3. `ProcessorRegistry.createProcessor` is signed and broadcast.
+4. `Controller.startProcessor` is signed and broadcast — `Controller` then allocates the processor to an eligible indexer.
+
+On success the CLI prints the processor ID, IPFS CID, and the two on-chain tx hashes:
+
+```
+=== Upload Complete ===
+         Processor ID: <user>_<project-name>
+         IPFS CID: Qm…
+         Network: testnet
+         sha256: …
+```
+
+To stop a processor later, run:
+
+```shell
+# Stops AND deletes the processor (default)
+PRIVATE_KEY=<OWNER_OR_OPERATOR_PRIVATE_KEY> \
+  yarn sentio stop <PROCESSOR_ID> --sentio-network testnet
+
+# Stop only — keep the processor on-chain so it can be started again
+PRIVATE_KEY=<OWNER_OR_OPERATOR_PRIVATE_KEY> \
+  yarn sentio stop <PROCESSOR_ID> --sentio-network testnet --no-delete
+```
+
+Only the owner, an operator of the owner, or an explicit processor admin can start or stop a processor. For the full processor lifecycle, see [Compute Network](compute-network#processor-lifecycle).
+
+## Step 4: Connect a query client
+
+The Storage Network speaks the native ClickHouse protocol. Queries must be signed by an Ethereum key whose Billing balance covers the fee, so you run a local **client** that signs queries with your key on the way out:
+
+Download [storage-network-daemon](https://github.com/sentioxyz/storage-network-daemon/releases) or use docker.
+
+Start the daemon with:
+
+```shell With Operator Key
+# use binary
+housegate --agent --state=https://testnet-storage-gateway.sentio.xyz --listen=:9001 --agent-key=$OPERATOR_PRIVATE_KEY --agent-owner=$OWNER_ADDRESS
+
+# use docker
+docker run -it -p 9001:9001 ghcr.io/housegate/housegate:latest --agent --state=https://testnet-storage-gateway.sentio.xyz --listen=:9001 --agent-key=$OPERATOR_PRIVATE_KEY --agent-owner=$OWNER_ADDRESS
+```
+```text With Owner Key
+# use binary
+housegate --agent --state=https://testnet-storage-gateway.sentio.xyz --listen=:9001 --agent-key=$OWNER_PRIVATE_KEY
+
+# use docker
+docker run -it -p 9001:9001 ghcr.io/housegate/housegate:latest --agent --state=https://testnet-storage-gateway.sentio.xyz --listen=:9001 --agent-key=$OWNER_PRIVATE_KEY
+```
+
+To avoid using private key in command line, see [Step 2](#step-2-add-an-operator-optional) to add an operator and then use operator's private key.
+
+Then start [clickhouse-client](https://clickhouse.com/docs/install/quick-install#start-clickhouse-client)  to connect to the daemon — no `--user`/`--password` needed:
+
+```shell
+clickhouse client --port 9001
+:) SHOW DATABASES;
+:) USE fv2CWEeV_0;
+:) SHOW TABLES;
+:) SELECT * FROM entity_AccountSnapshot LIMIT 1;
+```
+
+You can also use any client library to connect to the daemon.
+
+For the database permission model and how to share read access, see [Storage Network](storage-network).
+
+# Monitor processors
+
+Processor status could be view and managed at [Network Hub](https://testnet-network.sentio.xyz/processor).
+
+
+![](/assets/bb094f47924191aa5ace16998c1381963267375737e44bc04c7bf52ad835ab86-image.png)
+
+
+Each indexer node exposes a small JSON-RPC server on its compute-node RPC port (advertised via `IndexerRegistry`) for inspecting processor execution. Hit any node — if the processor isn't local to that node, the request is forwarded to whichever indexer hosts it. Method semantics are documented in [Compute Network](compute-network#node-json-rpc).
+
+```shell
+INDEXER_HOST=<individual indexer host>:<compute-node-rpc-port>   # port advertised via IndexerRegistry
+# or using gateway which is compute RPC only endpoint  
+# INDEXER_HOST=https://testnet-compute-gateway.sentio.xyz
+
+# Node identity + sync state
+curl -s $INDEXER_HOST -H 'Content-Type: application/json' \
+  --data '{"jsonrpc":"2.0","method":"sentio_nodeStatus","params":[],"id":1}'
+  
+PROCESSOR_ID=<your processor ID>
+
+# Processor progress
+curl -s $INDEXER_HOST -H 'Content-Type: application/json' \
+  --data '{"jsonrpc":"2.0","method":"sentio_processorStatus",
+           "params":[{"id":"$PROCESSOR_ID"}],"id":1}'
+
+# Recent logs (last 10 entries)
+curl -s $INDEXER_HOST -H 'Content-Type: application/json' \
+  --data '{"jsonrpc":"2.0","method":"sentio_processorLogs",
+           "params":[{"processor_id":"$PROCESSOR_ID","limit":10}],"id":1}'
+```
+
+<br />

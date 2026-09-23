@@ -1,0 +1,190 @@
+---
+title: "💬 AI Chat Interface Guide"
+---
+
+
+ The AI chat interface is your primary way to interact with Sentio's AI capabilities. This guide covers how to effectively use the chat system for data analysis and blockchain insights.
+
+ ## Accessing the AI Chat
+
+ ### Web Interface
+ 1. Navigate to any project dashboard
+ 2. Click the **Ask AI** button in the sidebar right next to the **Support**
+ 3. The chat panel opens with your project context automatically loaded
+
+ ### Chat Panel Layout
+ - **Collapsible Sidebar**: Toggle visibility to maximize your workspace
+ - **Message History**: Persistent conversation with scrollable history
+ - **Input Area**: Multi-line text input with resource attachment support
+ - **Schema Browser**: Quick access to your project's data tables and metrics
+
+ ## Starting a Conversation
+
+ ### Basic Queries
+ Show me transaction volumes for the past 7 days
+
+ What are the most active wallets in my protocol?
+
+ Find all failed transactions with high gas usage
+
+ ### Context Awareness
+ The AI automatically knows:
+ - **Your Current Project**: No need to specify project details
+ - **Available Data**: Understands your tables, metrics, and schema
+ - **Previous Conversation**: References earlier queries and results
+
+ ## Message Types
+
+ ### User Messages
+ - **Plain Text**: Natural language questions and requests
+ - **Follow-ups**: Reference previous results with "Show me more details"
+ - **Refinements**: "Make that query faster" or "Add error handling"
+
+ ### AI Responses
+
+ #### SQL Content
+ When the AI generates SQL queries, you'll see:
+ - **Generated Query**: Syntax-highlighted SQL code
+ - **Explanation**: What the query does in plain English
+ - **Execution Results**: Data table with results (if executed)
+ - **Chart Suggestions**: Recommended visualizations
+ - **Actions**: Execute, modify, or save the query
+
+ #### Insight Content
+ For metrics and analytics requests:
+ - **Metrics Query**: The generated query for your metrics
+ - **Time Range**: Specified analysis period
+ - **Aggregation Logic**: How data is grouped and summarized
+ - **Visualization**: Automatically generated charts
+ - **Actions**: Refine parameters or change chart types
+
+ #### System Messages
+ - **Processing Status**: "Analyzing your request..."
+ - **Errors**: Clear explanations if something goes wrong
+ - **Suggestions**: Recommended follow-up questions
+
+ ## Advanced Features
+
+ ### Resource Attachments
+ Enhance your queries by attaching specific resources:
+
+ #### Table References
+ Analyze the user_transactions table for patterns
+
+ Click the table icon to browse and select specific tables.
+
+ #### Metric References
+ Compare this metric with user retention rates
+
+ Attach existing metrics for comparative analysis.
+
+ #### File Uploads
+ Upload CSV files, contract ABIs, or documentation for context.
+
+ ### Multi-turn Conversations
+ Build complex analysis through conversation:
+
+ User: "Show me daily transaction volumes"
+
+ AI: [Generates query and chart]
+
+ User: "Now break that down by token type"
+
+ AI: [Modifies query to add grouping]
+
+ User: "What about the top 5 tokens only?"
+
+ AI: [Adds filtering and limits]
+
+ ### Streaming Responses
+ - Real-time response generation for immediate feedback
+ - Partial results shown as they're computed
+ - Cancel long-running operations if needed
+
+ ## Best Practices
+
+ ### Effective Prompting
+ ❌ "Show me data"
+
+ ✅ "Show me daily transaction counts for the past 30 days"
+
+ #### Provide Context
+ ❌ "Why did this spike?"
+
+ ✅ "Why did transaction volume spike on March 15th?"
+
+ #### Use Domain Terms
+ ❌ "Show me the money stuff"
+
+ ✅ "Show me TVL trends and fee revenue"
+
+ ### Iterative Refinement
+ Start broad and narrow down:
+ 1. "Show me all Uniswap activity"
+ 2. "Focus on V3 pools only"
+ 3. "Just the top 10 pools by volume"
+ 4. "Add daily breakdown for the past week"
+
+ ### Error Handling
+ When queries fail:
+ - Read the error explanation provided
+ - Try rephrasing your question
+ - Break complex requests into simpler parts
+ - Use the "Fix this query" feature
+
+ ## Session Management
+
+ ### Persistent Sessions
+ - Conversations persist across browser sessions
+ - Access chat history from the session list
+ - Resume conversations where you left off
+
+ ### Session Sharing
+ - Share interesting conversations with team members
+ - Export chat sessions for documentation
+ - Create public links for external sharing
+
+ ### Session Cleanup
+ - Sessions automatically expire after 2 hours of inactivity
+ - Explicitly save important sessions to prevent loss
+ - Clear sessions to start fresh analysis
+
+ ## Keyboard Shortcuts
+
+ - **Enter**: Send message (single line)
+ - **Shift + Enter**: New line in message
+ - **Ctrl/Cmd + K**: Focus on input
+ - **Esc**: Close chat panel
+ - **↑/↓**: Navigate message history
+
+ ## Troubleshooting
+
+ ### Common Issues
+
+ #### "I don't understand that table"
+ - Check if the table name is correct
+ - Use the schema browser to find available tables
+ - Try describing the data instead of using technical names
+
+ #### "Query timed out"
+ - Your query might be too complex
+ - Try adding time range filters
+ - Break down complex analysis into steps
+
+ #### "No data found"
+ - Verify your date ranges
+ - Check if filters are too restrictive
+ - Ensure the project has data for the requested period
+
+ ### Getting Help
+ - Use "Help me write a better query" for guidance
+ - Check the auto-generated suggestions
+ - Review similar examples in your chat history
+
+ ## Privacy & Security
+
+ - Chat sessions are scoped to your project
+ - Only project members can access chat history
+ - Sensitive data is handled according to your project's privacy settings
+ - API keys and credentials are never logged in chat history
+

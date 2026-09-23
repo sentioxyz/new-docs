@@ -1,0 +1,207 @@
+---
+title: "🛠️ AI Processor Generation"
+---
+
+
+ Sentio's AI can automatically generate complete processor implementations, including TypeScript code, tests, and project configuration, to track specific blockchain events and create custom analytics.
+
+ ## Overview
+
+ The AI Processor Generator analyzes smart contracts and creates comprehensive Sentio processors that:
+ - **Parse Contract ABIs**: Extract events, functions, and data structures
+ - **Generate TypeScript Code**: Complete processor implementations with proper typing
+ - **Create Test Suites**: Comprehensive test coverage for generated code
+ - **Bootstrap Projects**: Full Sentio project setup with configuration
+ - **Upload Artifacts**: Deploy generated code to S3 for immediate use
+
+ ## How It Works
+
+ 1. ABI Analysis → identify trackable events and functions
+ 2. Event Selection → choose relevant events based on your requirements
+ 3. Handler Creation → generate event handler functions with proper logic
+ 4. Metric Definitions → create counters, gauges, and custom metrics
+ 5. Test Generation → build comprehensive test cases
+ 6. Project Setup → configure build files, dependencies, and deployment
+
+ ## Generation Examples
+
+ ### Processor To Analyze Coinbase’s Staking Token
+ Request: Generator a processor for 0x31724ca0c982a31fbb5c57f4217ab585271fc9a5 on chain_id 1, to Indexes and analyzes all on-chain activity related to Coinbase’s staking token cbETH on Ethereum Mainnet. It tracks core metrics like mints, burns, transfers, total supply, exchange rate, and calculates TVL (Total Value Locked) and spot cbETH price.
+
+ ```typescript
+ import { Counter, Gauge } from '@sentio/sdk'
+import { ERC20Processor } from '@sentio/sdk/eth/builtin'
+import { StakedTokenV1Processor } from './types/eth/stakedtokenv1.js'
+import { EthChainId } from '@sentio/sdk/eth'
+
+// cbETH contract address on Ethereum mainnet
+const CBETH_ADDRESS = '0x31724ca0c982a31fbb5c57f4217ab585271fc9a5'
+
+// Metrics for tracking cbETH activity
+const mintCounter = Counter.register('cbeth_mints', {
+  description: 'Total number of cbETH mint operations'
+})
+
+const burnCounter = Counter.register('cbeth_burns', {
+  description: 'Total number of cbETH burn operations'
+})
+
+const transferCounter = Counter.register('cbeth_transfers', {
+  description: 'Total number of cbETH transfer operations'
+})
+
+const mintVolumeCounter = Counter.register('cbeth_mint_volume', {
+  description: 'Total volume of cbETH minted'
+})
+
+const burnVolumeCounter = Counter.register('cbeth_burn_volume', {
+  description: 'Total volume of cbETH burned'
+})
+
+const transferVolumeCounter = Counter.register('cbeth_transfer_volume', {
+  description: 'Total volume of cbETH transferred'
+})
+
+const totalSupplyGauge = Gauge.register('cbeth_total_supply', {
+  description: 'Current total supply of cbETH'
+})
+
+const exchangeRateGauge = Gauge.register('cbeth_exchange_rate', {
+  description: 'Current cbETH to ETH exchange rate'
+})
+
+const tvlGauge = Gauge.register('cbeth_tvl_eth', {
+  description: 'Total Value Locked in ETH equivalent'
+})
+
+const priceGauge = Gauge.register('cbeth_price_eth', {
+  description: 'cbETH price in ETH terms'
+})
+
+// Bind both ERC20 and custom cbETH processors
+const cbethProcessor = StakedTokenV1Processor.bind({ 
+  address: CBETH_ADDRESS, 
+  network: EthChainId.ETHEREUM 
+})
+
+const erc20Processor = ERC20Processor.bind({ 
+  address: CBETH_ADDRESS, 
+  network: EthChainId.ETHEREUM 
+})
+
+// Track mint events
+cbethProcessor.onEventMint(async (event, ctx) => {
+  try {
+    const minter = event.args.minter
+    const to = event.args.to
+    const amount = event.args.amount.scaleDown(18)
+    
+    // Update metrics
+    mintCounter.add(ctx, 1, {
+      minter,
+      to
+    })
+    
+    mintVolumeCounter.add(ctx, amount, {
+      minter,
+      to
+    })
+    
+    // Log mint event
+    ctx.eventLogger.emit('cbeth_mint', {
+      minter,
+      to,
+      amount: amount.toString(),
+      txHash: ctx.transactionHash,
+      blockNumber: ctx.blockNumber
+    })
+    
+    // Update total supply after mint
+    await updateSupplyAndTVL(ctx)
+    
+  } catch (error) {
+    console.error('Error processing mint event:', error)
+  }
+})
+// More handlers ...
+ ```
+
+ ## Advanced Features
+
+ ### Test Generation
+ Comprehensive test suites are also generated:
+
+ ```typescript
+ import assert from 'assert'
+import { before, describe, test } from 'node:test'
+import { TestProcessorServer, firstCounterValue, firstGaugeValue } from '@sentio/sdk/testing'
+import { mockTransferLog } from '@sentio/sdk/eth/builtin/erc20'
+import { mockMintLog, mockBurnLog, mockExchangeRateUpdatedLog } from './types/eth/stakedtokenv1.js'
+
+const CBETH_ADDRESS = '0x31724ca0c982a31fbb5c57f4217ab585271fc9a5'
+const TEST_MINTER = '0x1234567890123456789012345678901234567890'
+const TEST_USER = '0xb329e39ebefd16f40d38f07643652ce17ca5bac1'
+const TEST_ORACLE = '0x9876543210987654321098765432109876543210'
+
+describe('cbETH Processor Tests', () => {
+  const service = new TestProcessorServer(() => import('./processor.js'))
+
+  before(async () => {
+    await service.start()
+  })
+
+  test('has valid config', async () => {
+    const config = await service.getConfig({})
+    assert(config.contractConfigs.length > 0)
+    
+    // Should have cbETH contract configured
+    const cbethConfig = config.contractConfigs.find(c => 
+      c.contract?.address?.toLowerCase() === CBETH_ADDRESS.toLowerCase()
+    )
+    assert(cbethConfig, 'cbETH contract should be configured')
+  })
+
+  test('handles mint events correctly', async () => {
+    const mintAmount = 5n * 10n ** 18n // 5 cbETH
+    
+    const resp = await service.eth.testLog(
+      mockMintLog(CBETH_ADDRESS, {
+        minter: TEST_MINTER,
+        to: TEST_USER,
+        amount: mintAmount
+      })
+    )
+
+    // Check mint counter
+    const mintCounter = firstCounterValue(resp.result, 'cbeth_mints')
+    assert.equal(mintCounter, 1n)
+    
+    // Check mint volume
+    const mintVolume = firstCounterValue(resp.result, 'cbeth_mint_volume')
+    assert.equal(mintVolume, 5n)
+    
+    // Event logging is tested through metrics
+  })
+  // And more..
+})
+ ```
+
+ ## Project Structure
+
+ The AI creates a complete project and uploads the project into S3 for you to download it:
+
+ ```
+ my-protocol-processor/
+ ├── src/
+ │   ├── processor.ts
+ │   ├── types.ts
+ │   ├── utils.ts
+ │   └── constants.ts
+ ├── tests/
+ │   ├── processor.test.ts
+ │   └── integration.test.ts
+ ├── sentio.yaml
+ ├── package.json
+ ├── tsconfig.json
+ └── README.md
+ ```

@@ -1,0 +1,100 @@
+---
+title: "Other Networks"
+description: "Details on processors for Bitcoin and other supported chains."
+---
+
+Sentio is continually expanding its support. This section covers chains with specific processors that don't fit into the larger EVM or Move categories previously detailed, often representing unique architectures or being in earlier stages of integration.
+
+## Bitcoin
+
+* **Processor:** `BTCProcessor`
+  * **Typical Use Case:** Monitoring all Bitcoin transactions, analyzing block data, tracking activity related to specific addresses (via filtering in handlers).
+  * **Binding:** `BTCProcessor.bind({ chainId: 'bitcoin_mainnet', startBlock: 800000n, address: 'optional_context_address' })` (Note: `chainId` should be the specific identifier used by Sentio for Bitcoin networks).
+* **Handlers:**
+  * `onTransaction(handler(transaction, ctx), filter?)`: Triggered for every transaction processed. The `transaction` object represents a raw Bitcoin transaction with inputs (`vin`) and outputs (`vout`). Optional `filter` can be applied (details on `TransactionFilters` structure needed from its definition, but likely involves addresses, scripts, etc.).
+  * `onBlockInterval(handler(block, ctx), interval?, backfillInterval?, fetchConfig?)`: Processes blocks (`BTCBlock` type) based on block number intervals. The `block` object contains header information and optionally full transaction data if `fetchConfig.getTransactions` is true.
+  * `onTimeInterval(handler(block, ctx), intervalMinutes?, backfillIntervalMinutes?, fetchConfig?)`: Processes blocks based on time intervals, similar to `onBlockInterval`.
+* **Sample code:**
+  ```typescript
+  import { BTCProcessor, BTCContext, BTCBlockContext, Transaction, BTCBlock } from "@sentio/sdk/btc"; // Adjust path as needed
+
+  const MY_ADDRESS = "1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa"; // Example address
+
+  BTCProcessor.bind({
+    chainId: "bitcoin_mainnet", // Use the correct Sentio chainId for Bitcoin
+    startBlock: 810000n,
+    // address: MY_ADDRESS // Optional: address for context, filter in handler if needed
+  })
+  .onTransaction(async (tx: Transaction, ctx: BTCContext) => {
+    let involvedInTx = false;
+    let outputValueToMyAddress = 0;
+
+    // Check outputs
+    for (const output of tx.vout) {
+      if (output.scriptPubKey?.address === MY_ADDRESS) {
+        involvedInTx = true;
+        outputValueToMyAddress += output.value; // Value is typically in BTC, confirm unit
+        ctx.meter.Counter("btc_received").add(output.value, { address: MY_ADDRESS });
+      }
+      // Could also check input addresses if needed (requires info from previous txns)
+    }
+
+    if (involvedInTx) {
+      ctx.meter.Counter("transactions_involving_address").add(1, { address: MY_ADDRESS });
+      ctx.eventLogger.emit("AddressActivity", {
+        distinctId: MY_ADDRESS,
+        txid: tx.txid,
+        outputValue: outputValueToMyAddress,
+      });
+    }
+
+    // Process all transactions
+    ctx.meter.Counter("total_btc_txns").add(1);
+    ctx.meter.Counter("total_btc_output_value").add(
+      tx.vout.reduce((sum, out) => sum + out.value, 0)
+    );
+
+  })
+  .onBlockInterval(async (block: BTCBlock, ctx: BTCBlockContext) => {
+    ctx.meter.Gauge("latest_block_height").record(block.height);
+    ctx.meter.Gauge("latest_block_timestamp").record(block.time); // Assumes 'time' is Unix timestamp
+
+    if (block.tx) { // Check if transactions were fetched
+      ctx.meter.Counter("transactions_in_interval_blocks").add(block.tx.length);
+    }
+  }, 10, 60, { getTransactions: true }); // Process every 10 blocks, fetch txns
+
+  ```
+
+## Requesting New Chains or Adding Custom Chain
+
+If Sentio doesn't natively support a chain you need:
+
+1. **Contact Sentio:** Reach out to the Sentio team to request official support.
+2. **Bring Your Own RPC (BYORPC):** For some chain types (especially EVM-compatible or Subgraph-compatible), you might be able to configure Sentio to use your own archive node RPC endpoint. This involves configuration in `sentio.yaml` (for processors) or the `network` field in `subgraph.yaml` (for subgraphs). Consult specific Sentio documentation on Custom Chain support for feasibility and instructions.
+
+### Sentio Processor
+
+In the `sentio.yaml` file, add the following section:
+
+```yaml
+networkOverrides:
+- chain: <Chain ID>
+  host: <Your own RPC>
+```
+
+The Chain ID must be an ID from [💎 Supported Networks](/guides/collect-data/supported-network), e.g., `1`. 
+
+For custom chains, use chain ID `customized` in `sentio.yaml` and use chain ID `EthChainID.CUSTOM` in processor's typescript file.
+
+### Subgraph
+
+In Subgraph's manifest file, put your RPC endpoint in the network field, for example:
+
+```yaml
+network: 'http://my-forked-rpc-endpoint'
+```
+
+## Development Status
+
+Support for chains listed in this section (Bitcoin) may be in **Alpha** or **Beta** stages. This means APIs might change, features could be limited compared to more established chains like EVM, and dedicated support might be evolving. Always check the latest Sentio documentation and release notes

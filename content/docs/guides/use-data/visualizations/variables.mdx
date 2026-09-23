@@ -1,0 +1,151 @@
+---
+title: "🎛️ Template Variables and Custom Variables"
+---
+
+Let's learn how to use Template Variables and Custom Variables to build flexible, reusable, and dynamic dashboards, making data exploration and analysis simpler than ever.
+
+## Where to Find Variables in Sentio
+
+Variables can be found in several places throughout the Sentio platform. You might encounter them when:
+
+* **Inside a Dashboard Panel's SQL Editor:** adding a new panel using the "SQL Chart" option, you will find a **{}Parameters** button located directly below the SQL editing area. This allows you to define temporary **"Custom Variables"** to test and debug your query logic with different parameters before saving the panel.
+
+![](/assets/2ae7e476cf0600288616518595de8413cbbab45c1a2480d7f939da94fb081171-entry-1.gif)
+
+<br />
+
+* **In the Main Dashboard Settings:** Click the settings icon (⚙️) located in the top-left corner. From the menu that appears, select `Edit Template Variables` option. This is where you configure the behavior of your variables, such as adding predefined options, or setting default values.
+
+![](/assets/ba6e8307675e30ed1deac6951126a09469e4360fe37d1f8425de3fea127286cb-entry-2.gif)
+
+<br />
+
+* **Inside Data Studio's SQL Editor:** The Data Studio provides a sandbox environment for data exploration, and it also supports the use of Custom Variables for dynamic querying. This is ideal for exploratory analysis where you want to quickly run a query with different inputs (like various contract addresses or user IDs) without repeatedly editing the query itself.
+
+![](/assets/7e53a30692f8ef14945ea4f4b354d1e2ac6a23a8210adcceb4119ccb5b179869-entry-3.gif)
+
+<br />
+
+* **In the "My Dashboards" Page:**  Navigate to the "My Dashboards" page ([https://dash.sentio.xyz/](https://dash.sentio.xyz/)). Here, you can find an `Edit Template Variables` option for each dashboard. Additionally, clicking `Add Panel` from this page will also take you to the panel editor with its **{}Parameters** button.
+
+![](/assets/5eaafc6e7c9267caacbd2411a701fc5086e5fd2d516e4afbede11cca591883d9-entry-4.gif)
+
+<br />
+
+## Step-by-Step Guide: Building a Dynamic Dashboard
+
+There are two primary workflows for creating a dynamic dashboard with Variables in Sentio. You can either build "bottom-up" starting from a SQL query, or "top-down" by defining your variable first.
+
+### Method 1: The Bottom-Up Approach (Starting from a SQL Panel)
+
+#### 1.Create a Panel with an Initial "Custom Variable"
+
+First, let's create a new panel with an SQL chart. Inside the SQL editor, you can define a Custom Variable to test your logic. These variables exist only within the panel editor session.
+
+**Example : Daily Volume & Swap Count**
+
+* In your dashboard, click `Add Panel` and choose to create a new chart with an SQL query.
+
+* In the SQL editor, click the **{}Parameters** button to define a new Custom Variable.
+
+* Write your SQL query. Notice the **special syntax** used to reference this in-editor Custom Variable.
+
+* Debug your query. You can change the default value of the Custom Variable in the editor to see the chart update instantly, confirming your logic is correct.
+
+![](/assets/45905212d50324df7023417be2fe7b0870b82c3332db2a0a2ad3dbd1233abb13-step.gif)
+
+<br />
+
+#### 2.Save the Panel and Understand the Transition
+
+This is a critical step. When you save the panel to your dashboard, Sentio automatically performs two actions:
+
+* It detects that your query uses a Custom Variable.
+* It promotes this variable to a permanent, dashboard-level Template Variable.
+
+Importantly, the way you reference the variable in your saved query changes. The in-editor reference is converted to the Template Variable syntax.
+
+* **Old Reference (Custom Variable):** `${pair_name}`
+* **New Reference (Template Variable):** `$pair_name`
+
+![](/assets/f7deac6a9e83f6482d50da4987527e4e85d17253b0af5b282381b888125229da-save.gif)
+
+<br />
+
+#### 3.Configure the New Template Variable
+
+Now that the variable exists at the dashboard level, you can further configure it to be more user-friendly.
+
+* At the top of the dashboard, or by going to the `Edit Template Variables` in your dashboard's settings, You will see your newly created `pair_name` variable.
+* Manually add some common options to make it easy for users to select from. (Options should be separated by semicolons.)
+* Set the default value.
+
+> ℹ️ Important Note on Variable Syntax and Default Values
+>
+> Please be aware that the transition from a Custom Variable (in the editor) to a Template Variable (on the dashboard) also affects how you should format default values for text or string type variables.
+>
+> * **For Custom Variables (in the panel editor):** When setting a default value, you must wrap the string in single quotes to ensure it is treated as a literal string in the initial query. **Example: 'APT-THL'**.
+> * **For Template Variables (in dashboard settings):**  Once the variable is saved to the dashboard, the system handles the quoting automatically within the query. Therefore, when you set the default value in the dashboard's variable settings, you should not include the quotes. **Example: APT-THL**.
+>
+> This distinction is crucial for ensuring your variables function correctly both during the debugging phase in the editor and in the final interactive dashboard.
+
+![](/assets/ca8fe14c6cebcbab81f54ba1a7ba9d28596dfda7d5ce9970ed15d01b24412515-set-options.gif)
+
+<br />
+
+#### 4.See it in Action!
+
+Return to your dashboard. You will now see a dropdown menu at the top labeled "pair\_name" (or whatever label you provided).\
+When you select a different token from the dropdown, the panel's chart will instantly refresh to display data for the newly selected token contract.
+
+![](/assets/483e4ded9c6a43080560db5ae99ade9ddcdd4dcfc83643cbd69747fac13a7ac2-see-actions.gif)
+
+<br />
+
+### Method 2: The Top-Down Approach (Using Insight Panels)
+
+#### 1.Create the Template Variable Directly
+
+Instead of starting in the panel editor, we'll begin at the dashboard level.
+
+* On your dashboard, click the Settings icon (⚙️) in the top-left corner and select `Edit Template Variables`, then click `Add Template Variable`.
+* For the variable's source, select an attribute directly from your project's Events/Metrics (for example, the pair field from your swap event).
+* Give your variable a name and save the variable. (e.g., `pair_name`).
+
+> ℹ️ Key Advantage
+>
+> Sentio will automatically populate the dropdown options with all unique values for that attribute found in your database. You do not need to manually configure options or a default value. The resulting dropdown menu will also be searchable, making it easy to find values in long lists.
+
+![](/assets/9f01a4bf0396bf838d6a2693817a538208af6c945fe61e4f9a9de44189fdeec9-method2-add-var.gif)
+
+<br />
+
+#### 2.Create an Insight Panel and Apply the Variable
+
+Now, let's create a panel that uses our new variable.
+
+* Return to the dashboard and click `Add Panel`. This time, select the Insight panel type.
+* In the Insight panel's UI, navigate to the filter conditions. Add a filter for the same attribute you chose for your variable (e.g., `pair_name`).
+* Instead of entering a static value (like "USDC"), you can now select the Template Variable you just created directly from the value input field.
+* Configure the rest of your analysis using the Insight panel's UI and save the panel (e.g., select your desired time granularity, such as Daily, Weekly, or Hourly).
+
+![](/assets/829c5979c675b06d1e84ba055b17997958aea11916742d7c45b03cc6123dea00-method2-add-panel.gif)
+
+<br />
+
+#### 3.View the Interactive Result
+
+Just like with the first method, your new Insight panel is now fully interactive. The panel's data is dynamically controlled by the `pair_name` dropdown menu at the top of your dashboard.
+
+![](/assets/a1a310c1692b9d698b841052783b76826874962648ffac8a9b800bc09a52b9f5-method2-see-action.gif)
+
+<br />
+
+## Important Considerations
+
+* **Other Entry Points:** While this guide focuses on creating variables from a dashboard panel, the principles of defining and referencing them in Data Studio or My Dashboards areas are very similar.
+* **A Note on dash.sentio.xyz and Data Sources:** When adding Template Variables in dash.sentio.xyz, the source project must target a data source from an external (public) project.
+* **Reminder on Quotes:** Remember to wrap default text values in single quotes ('...') only when defining a temporary Custom Variable in the panel editor, not when setting the final Template Variable in the dashboard settings.
+* **Built-in Time Variables (`$startTime`, `$endTime`):** When writing queries in the SQL Chart editor, you have access to two pre-defined System Variables: `$startTime` and `$endTime`. These automatically correspond to the start and end of the time range selected in your dashboard's global date picker, allowing your charts to be time-aware without needing a separate time-based Template Variable. For a precise definition, simply hover over the information icon (?) within the editor.
+
+![](/assets/2816fa23bfe27025bc06582272fbe92ea80d31b02f90b9cffa8e740b3b647943-system-var.gif)

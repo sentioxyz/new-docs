@@ -1,0 +1,31 @@
+---
+title: "Formula Usage"
+description: "Best practices for using formulas in Sentio dashboards."
+---
+
+
+Sentio dashboards allow you to apply formulas to metrics displayed in charts, enabling calculations like ratios, sums, differences, etc., directly in the UI.
+
+## Aggregate Before Calculating Between Metrics
+
+**Problem:** You want to display the difference or sum of two related metrics (e.g., `metricA - metricB` or `metricA + metricB`), but the result seems incorrect or the formula fails.
+
+**Cause:** Formulas often operate on a single time series at a time. If `metricA` or `metricB` (or both) have multiple series due to different label combinations, applying a simple `A - B` formula might not work as expected because the system doesn't know *which* series of A to subtract from *which* series of B.
+
+**Recommendation:**
+
+1.  **Apply Space Aggregation First:** Before applying formulas that combine different base metrics, ensure each metric involved is aggregated down to a **single time series** using appropriate aggregation functions in the dashboard UI.
+2.  **Use Aggregation Functions:** Select functions like `sum`, `avg`, `min`, `max`, or `last` in the metric query builder for *each* metric (`metricA` and `metricB`) to collapse their potentially multiple series (based on labels) into one aggregated series.
+3.  **Apply Formula:** Once both `metricA` and `metricB` are represented as single, aggregated time series in your chart setup, *then* apply the desired formula (e.g., `A - B`).
+
+**Example Visualization (Conceptual):**
+
+Imagine `metricA` has series for `token=USDC` and `token=DAI`, and `metricB` also has series for both tokens.
+
+*   **Incorrect:** Directly applying formula `A - B`. The chart doesn't know if it should calculate `USDC_A - USDC_B`, `DAI_A - DAI_B`, `USDC_A - DAI_B`, etc.
+*   **Correct:**
+    1.  Add `metricA` to the chart, apply aggregation `sum` (let's call this aggregated series `SumA`).
+    2.  Add `metricB` to the chart, apply aggregation `sum` (let's call this `SumB`).
+    3.  Now apply the formula `SumA - SumB`. This calculates the difference between the total sum of A across all its series and the total sum of B across all its series.
+
+*(Based on original `best-practice/formula-usage-best-practices.md`)* 

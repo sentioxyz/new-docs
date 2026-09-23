@@ -1,0 +1,106 @@
+---
+title: "📕 Event Logs"
+---
+
+Event Logs are like structured log entries, similar to tables in a traditional database. They are ideal for recording specific, individual occurrences with rich details. They are searchable and filterable in the Sentio UI.
+
+**Accessed via:** `ctx.eventLogger`
+
+## Log Levels
+
+Sentio allows users to submit and search for logs. Logs naturally have 5 levels:
+
+* DEBUG
+* INFO
+* WARNING
+* ERROR
+* CRITICAL
+
+## System Labels
+
+Sentio also attaches system labels automatically to the log, including:
+
+* Contract
+* Address
+* Chain
+
+## Event Analytics
+
+Follow [event-analytics-dashboard](event-analytics-dashboard "mention") to learn how to visualize Events.
+
+## Filter Event Logs on UI
+
+Using the menu on the left hand side, users can filter the log based on [#log-levels](event-logs#log-levels "mention") and [#system-labels](event-logs#system-labels "mention"). The Labels selection is standard faceted search filters.
+
+* Click a label switch between **All** and **Only**
+
+![](/assets/4264a4a957879a4be0441917349cf7c800f91dba3a6ee7d698ab21a2416f2eda-rp-datatype-event-1.gif)
+
+* Click the checkbox **exclude** a label
+
+![](/assets/c5bff807bd7082148de6cfdb78dedac4b1dae98979e4f8251ee739a7f45c155a-rp-datatype-event-2.gif)
+
+## Full Text Search
+
+We support **full-text search** on logs. If you want to search all the **SWAP USDC:**
+
+![](/assets/70ce3850db6ae58a5a92813a8ba92a38895299300ba19257f3bc8a3522fc8a7d-rp-datatype-event-3.gif)
+
+## Search with conditions
+
+### Term
+
+Let's find all the logs with a given `distinct_id`
+
+![](/assets/17a2cc10f9a510cb3321630b88dc4dd1117ea94a04f0423283ccdde02cf9d538-rp-datatype-event-4.gif)
+
+### Range
+
+Let's find all the logs with **value** between 1 to 3.
+
+![](/assets/58dc4afa18af590eb48b810352d11ff5492d2050b59587b1c5038e113da716d3-rp-datatype-event-5.gif)
+
+### Composite conditions
+
+The conditions are composable
+
+![](/assets/750a8f94a863d1d7c65fbee80c2a9b21d76f854363ed1f60088d13b9e08d582a-rp-datatype-event-6.gif)
+
+## Submit Event Logs
+
+Users can write the following code to submit logs in processor using the following code:
+
+```typescript
+ctx.eventLogger.emit("Deposit",
+  {
+    distinctId: event.args.from, // optional, enable for analytic use case
+    severity: LogLevel.INFO, // optional
+    message: `Deposit ${amount} ${tokenInfo.symbol} at ${ctx.blockNumber}`, // optional, enable for better text search
+    amount: amount, // you can also put other attributes
+  }
+)
+```
+
+The supported log levels are:
+
+```typescript
+export enum LogLevel {
+  DEBUG = 0,
+  INFO = 1,
+  WARNING = 2,
+  ERROR = 3,
+  CRITICAL = 4,
+}
+```
+
+## Distinct ID
+
+You might notice there is a `distinctId` field. If missing, `null` is used. Note that this field is critical for Sentio to compute analytics related to DAU, WAU, etc.
+
+If you'd like to emit a log for all `swap` user activities in order to compute the daily unique wallets, you could do the following:
+
+```typescript
+ .onEventSwapEvent(async (evt, ctx) => {
+   ctx.eventLogger.emit("user", { distinctId: ctx.transaction.sender })
+ })
+```

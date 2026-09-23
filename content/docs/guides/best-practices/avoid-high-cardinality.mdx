@@ -1,0 +1,78 @@
+---
+title: "Avoiding High Cardinality"
+description: "Understand and prevent issues with high cardinality metric labels."
+---
+
+
+## What is Cardinality?
+
+In the context of Sentio Metrics (Counters and Gauges), **cardinality** refers to the number of unique combinations of label values associated with a single metric name.
+
+For example, if you have a metric `transaction_volume` with labels `token` and `dex`: 
+
+*   `{ token: 'USDC', dex: 'Uniswap' }` is one series.
+*   `{ token: 'DAI', dex: 'Uniswap' }` is another series.
+*   `{ token: 'USDC', dex: 'Sushiswap' }` is a third series.
+
+The total number of such unique combinations is the cardinality of the `transaction_volume` metric.
+
+## Why Avoid High Cardinality?
+
+Sentio, like most time-series databases, performs best when the cardinality per metric is kept within reasonable limits. There's typically a hard limit (often around **10,000 unique series per metric name**) enforced by the system.
+
+Exceeding this limit will usually cause your processor to **stop running** with an error message like "Time series exceeds limit" or similar.
+
+High cardinality also negatively impacts:
+
+*   **Performance:** Querying metrics with millions of series becomes slow.
+*   **Cost:** Storing a vast number of individual time series can be expensive.
+*   **Usability:** Dashboards become cluttered and difficult to interpret.
+
+## Examples of High Cardinality Labels (To Avoid in Metrics)
+
+*   **Wallet Addresses:** (`{ user_address: '0x123...' }`)
+*   **Transaction Hashes:** (`{ tx_hash: '0xabc...' }`)
+*   **Token IDs (for large NFT collections):** (`{ token_id: '1234567' }`)
+*   **Raw Numerical Amounts (if highly variable):** (`{ amount: '123.456789' }`)
+*   **Arbitrary Pool Addresses (if not whitelisted/categorized):** (`{ pool_address: '0xdef...' }`)
+*   **Timestamps or Block Numbers as Labels**
+*   Any identifier with thousands or millions of potential unique values.
+
+## What to Do Instead?
+
+If you need to record data associated with high-cardinality identifiers, use:
+
+1.  **Event Logs:** Add the high-cardinality identifier as an *attribute* within the log.
+    ```typescript
+    // Instead of: ctx.meter.Counter('user_tx_count').add(1, { user: tx.from })
+    // Use:
+    ctx.eventLogger.emit('UserTransaction', {
+      distinctId: tx.from, // Good for user analytics
+      user_address: tx.from, // Add as attribute
+      value: tx.value.toString()
+    });
+    ```
+2.  **Entities:** Define an entity where the high-cardinality identifier is the `id` or a field. This allows structured storage and querying via GraphQL/SQL.
+    ```graphql
+    // schema.graphql
+    type UserInteraction @entity {
+      id: ID! # Transaction hash
+      user: String! @index
+      timestamp: BigInt!
+      action: String!
+    }
+    ```
+    ```typescript
+    // processor.ts
+    // Instead of: ctx.meter.Counter('actions').add(1, { txHash: tx.hash })
+    // Use:
+    const interaction = new UserInteraction({
+      id: tx.hash,
+      user: tx.from,
+      timestamp: BigInt(ctx.timestamp.getTime()),
+      action: 'swap'
+    });
+    await ctx.store.upsert(interaction);
+    ```
+
+By choosing the right data output type, you can ensure your processors run efficiently and reliably. 

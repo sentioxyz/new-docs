@@ -1,0 +1,252 @@
+---
+title: "🔗 Triggers and Handlers"
+description: "Learn how processors react to blockchain events using various handlers and the context object. "
+---
+
+Triggers and Handlers are the core of a Sentio Processor's logic. Triggers define what specific type of blockchain activity occurs for the contract or chain your processor is bound to, while Handlers define the how you process the data corresponding to triggers.
+
+## The Paradigm
+
+Think of it as subscribing to notifications:
+
+1. You **bind** a processor to a source (e.g., an ERC20 contract address).
+2. You **register triggers** for specific events you care about (e.g., `onEventTransfer`, `onBlockInterval`).
+3. When Sentio detects a match on the blockchain, it **executes** your **registered handler functions**.
+4. Your handler function receives **event data** and a **context object (`ctx`)** to perform actions.
+
+```typescript
+// General Pattern
+ProcessorType.bind({ /* config */ })
+  .onEventName1( async (eventData1, ctx) => { 
+    // Logic for handler 1
+    ctx.meter.Counter('metric1').add(1);
+  })
+  .onCallFunction2( async (callData2, ctx) => { 
+    // Logic for handler 2 
+    ctx.eventLogger.emit('Log2', { detail: '...' });
+  });
+  // ... more triggers and handlers
+```
+
+## Handler Types
+
+Sentio provides various triggers:
+
+### **(A) Contract Events:** Triggered by specific `event` emissions from your smart contract (defined in its ABI).
+
+* **`onEventXxx( (event, ctx) => { ... } )`(Specific Event):**
+  * The most common type. `Xxx` corresponds to the event name in the ABI (e.g., `Transfer`, `Approval`, `Swap`, `Deposit`).
+  * Generated automatically when you use custom ABIs or provided by built-in processors (like `ERC20Processor.onEventTransfer`).
+  * The `event` argument is strongly typed based on the ABI, giving you easy access to event parameters (e.g., `event.args.from`, `event.args.value`).
+  ```typescript
+  // ERC20 Transfer event example
+  ERC20Processor.bind({ address: '0x...', network: 1 })
+    .onEventTransfer((event, ctx) => {
+      ctx.meter.Counter('transfers').add(1);
+      ctx.meter.Counter('volume').add(event.args.value.scaleDown(18));
+    });
+
+  // Custom contract event example
+  MyContractProcessor.bind({ address: '0x...', network: 1 })
+    .onEventDeposit((event, ctx) => { // Assumes 'Deposit' event in ABI
+      ctx.meter.Counter('deposits').add(1);
+      ctx.meter.Counter('deposit_volume').add(event.args.amount); // Accessing 'amount' param
+    });
+  ```
+
+* **`onEvent( (event, ctx) => { ... } )`(Generic Event):**
+  * Catches *any* event emitted by the bound contract.
+  * Useful if you don't have a specific ABI or want to handle events dynamically.
+  * The `event` argument is less specific; you might need to check `event.eventName` and manually decode parameters if needed.
+  ```typescript
+  GenericProcessor.bind(EVENT, { address: '0x...', network: 1 })
+    .onEvent((event, ctx) => {
+      ctx.eventLogger.emit('AnyContractEvent', {
+        name: event.eventName,
+        signature: event.signature,
+        address: event.address,
+        blockNumber: event.blockNumber
+      });
+      if (event.eventName === 'Transfer') {
+        // Manually handle or decode transfer parameters if needed
+      }
+    });
+  ```
+
+### **(B) Time/Block Based:** Triggered at regular intervals.
+
+* **`onTimeInterval( (timestamp, ctx) => { ... }, intervalInMinutes, backfillIntervalInMinutes = intervalInMinutes )`:**
+  * Executes periodically based on wall-clock time (approximately).
+  * `intervalInMinutes`: How often to run during real-time processing. Defaults to 60.
+  * `backfillIntervalInMinutes`: How often to run during historical backfill (often set higher for performance). Defaults to 240.
+  * Useful for periodic checks, sampling data, or time-based aggregations.
+  ```typescript
+  // Execute once per hour during real-time, once per day during backfill
+  GlobalProcessor.bind({ network: 1 })
+    .onTimeInterval((timestamp, ctx) => {
+      // Logic executed approximately every hour
+      ctx.meter.Gauge('hourly_check_ts').record(timestamp);
+    }, 60, 60 * 24);
+  ```
+
+* **`onBlockInterval( (block, ctx) => { ... }, blockInterval, backfillBlockInterval )`:**
+  * Executes every `blockInterval` blocks during real-time processing. Defaults to 250.
+  * `backfillBlockInterval`: Interval used during historical backfill. Defaults to 1000.
+  * The `block` argument contains block information (number, timestamp, baseFee, etc.).
+  * Useful for block-based sampling or logic tied to block progression.
+  ```typescript
+  // Process every 100 recent blocks, every 500 blocks during backfill
+  GlobalProcessor.bind({ network: 1 })
+    .onBlockInterval((block, ctx) => {
+      ctx.meter.Gauge('eth_base_fee').record(block.baseFeePerGas || 0n);
+    }, 100, 500);
+  ```
+
+### **(C) Transaction Based:** Triggered by transactions involving the bound contract address.
+
+* **`onTransaction( (tx, ctx) => { ... } )`:**
+  * Executes when a transaction interacts with the contract (e.g., sends ETH to it, calls a function). Be mindful that this can be resource-intensive as it processes every transaction within the specified block range.
+  * The `tx` argument contains transaction details (hash, from, to, gasUsed, status, etc.).
+  ```typescript
+  GlobalProcessor.bind({ address: '0x...', network: 1 })
+    .onTransaction((tx, ctx) => {
+  	  // Increment a counter for every transaction processed
+  	  ctx.meter.Counter('total_transactions_processed').add(1);
+
+  	  // Example: Log transactions sent to a specific address (e.g., a known contract or wallet)
+  	  const targetAddress = "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D"; // Example: Uniswap V2 Router
+   		if (tx.to && tx.to.toLowerCase() === targetAddress.toLowerCase()) {
+  		  console.log(`Transaction interacted with target address: ${tx.hash}, From: ${tx.from}`);
+    	  ctx.meter.Counter('target_address_interactions').add(1, { address: targetAddress });
+   	 }
+
+    // Example: Analyze gas price for transactions
+  	  if (tx.gasPrice) {
+  	    ctx.meter.Gauge('transaction_gas_price').record(tx.gasPrice);
+  	  }
+    });
+  ```
+
+### **(D) Function Calls (EVM Trace-based):** Triggered by internal function calls within transactions (requires trace support).
+
+* **`onCallXxx( (call, ctx) => { ... } )`:**
+  * Executes when the specific function `Xxx` (from the ABI) is called internally within a transaction targeting the bound contract.
+  * Useful for tracking internal logic flow, even without specific events.
+  * The `call` argument contains function arguments (`call.args`) and return values (`call.returnValue`), plus an `error` field if the internal call reverted.
+  * **Note:** Requires Sentio nodes with trace capabilities enabled for the specific chain.
+  ```typescript
+  // Requires trace support
+  ERC20Processor.bind({ address: '0x...', network: 1 })
+    .onCallTransfer((call, ctx) => {
+      // Check if the internal call succeeded
+      if (!call.error) {
+        ctx.meter.Counter('internal_transfer_calls').add(1);
+        ctx.meter.Counter('internal_transfer_volume').add(call.args.amount);
+      }
+    });
+  ```
+
+### **(E) State Changes (Advanced):** Triggered by changes in contract storage or specific resource types (chain-dependent).
+
+* **`onObjectChange(...)`/`onResourceChange(...)` / `onContractTransfer(...)`:**
+  * Monitor specific state variables, resource types (Aptos/Sui), or asset transfers involving the contract.
+  * Syntax and availability vary significantly between chains (EVM, Aptos, Sui).
+  * Consult chain-specific documentation for details.
+  ```typescript
+  // Example: EVM onObjectChange (simplified)
+  MyContractProcessor.bind({ address: '0x...', network: 1 })
+    .onObjectChange("balanceOf", "function balanceOf(address): uint256", (change, ctx) => {
+      const { oldValue, newValue, args } = change;
+      const address = args[0];
+      ctx.eventLogger.emit('BalanceChanged', { address, oldValue, newValue });
+    });
+  ```
+
+### **(F) Network-Specific Handlers:** Some chains offer unique handlers.
+
+* **Solana:** `onInstructionExecuted`, `onAccountUpdate`.
+* **Aptos:** `onEntryFunctionCall`, `onVersionInterval`.
+* **Sui:** `onEventCreated`, `onEventDeleted` (for `MoveObjectProcessor`).
+* **Fuel:** `onLogXxx`.
+
+Refer to the [Chain Specifics](/guides/collect-data/multi-chain/overview) for details on these specialized handlers.
+
+## The Context (`ctx`) Object
+
+Every handler function receives a `ctx` (Context) object as its second argument. This object is your interface to Sentio's services and provides information about the current processing context.
+
+**Key`ctx` Properties/Methods:**
+
+* **Data Output APIs:**
+  * `ctx.meter`: Access to `Counter` and `Gauge` for emitting metrics.
+    * `ctx.meter.Counter('myCounter').add(value, { label: 'value' });`
+    * `ctx.meter.Gauge('myGauge').record(value, { label: 'value' });`
+  * `ctx.eventLogger`: Used to emit structured event logs.
+    * `ctx.eventLogger.emit('MyEventName', { severity: 'info', detail1: '...', value: 123 });`
+  * `ctx.store`: Interface to the persistent Entity Store (for reading/writing entities).
+    * `await ctx.store.get(EntityClass, id);`
+    * `await ctx.store.upsert(entityInstance);`
+  * `ctx.exporter`: Interface to send data via Webhooks.
+    * `ctx.exporter.emit({ data: '...' });`
+* **Blockchain Context:**
+  * `ctx.blockNumber` (or `ctx.version` for Aptos/Sui): The block/version number being processed.
+  * `ctx.timestamp`: The timestamp of the current block.
+  * `ctx.chainId`: The chain ID (e.g., `1`, `56`).
+  * `ctx.transaction`: Information about the transaction that triggered the event (if applicable, availability varies by handler type).
+  * `ctx.contract`: Reference to the contract instance for making view calls (see below).
+
+```typescript
+processor.onEventTransfer(async (event, ctx) => {
+  // Use meter API
+  ctx.meter.Counter('count').add(1, { token: event.address });
+  
+  // Use eventLogger API
+  ctx.eventLogger.emit('ActivityLog', { 
+      distinctId: event.args.to,
+      details: `Transfer of ${event.args.value.scaleDown(18)}`
+  });
+  
+  // Access blockchain context
+  console.log(`Processing event in block ${ctx.blockNumber} on network ${ctx.chainId}`);
+  
+});
+```
+
+## Using Filters with Handlers
+
+For event handlers (`onEventXxx`), you can often provide an optional third argument: a **Filter**. Filters allow you to specify conditions on the event parameters, ensuring your handler *only* runs if the event matches the filter criteria. This can significantly improve performance by skipping unnecessary handler executions.
+
+Filters are typically generated alongside the processor types.
+
+```typescript
+// ERC20 Transfer event filter example
+// Only trigger handler if 'from' is the zero address (mint event)
+const mintFilter = ERC20Processor.filters.Transfer(
+  '0x0000000000000000000000000000000000000000', // from address filter
+  null, // to address filter (null means match any)
+  // value filter (null means match any)
+);
+
+ERC20Processor.bind({ address: '0x...', network: 1 })
+  .onEventTransfer((event, ctx) => {
+    // This code only runs for transfers FROM the zero address
+    ctx.meter.Counter('token_mints').add(event.args.value.scaleDown(18));
+  }, mintFilter); // Pass the filter as the third argument
+
+
+// Another example: Filter for transfers TO a specific address
+const specificRecipientFilter = ERC20Processor.filters.Transfer(
+  null, // Any sender
+  '0xSpecificRecipientAddress' // Only this recipient
+);
+
+ERC20Processor.bind({ address: '0x...', network: 1 })
+  .onEventTransfer((event, ctx) => {
+    // This code only runs for transfers TO 0xSpecificRecipientAddress
+    ctx.eventLogger.emit('ReceivedPayment', { from: event.args.from, value: event.args.value.toString() });
+  }, specificRecipientFilter);
+```
+
+* The structure of the filter matches the indexed and non-indexed parameters of the event.
+* Use `null` or `undefined` for a parameter slot to match any value for that parameter.
+* Provide a specific value to filter for only events where that parameter matches.

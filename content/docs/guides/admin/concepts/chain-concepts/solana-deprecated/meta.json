@@ -1,0 +1,8 @@
+{
+  "title": "Solana (Deprecated)",
+  "pages": [
+    "decode-solana-instructions",
+    "monitor-weth-balance-on-solana-via-native-program",
+    "monitor-anchor-programs"
+  ]
+}

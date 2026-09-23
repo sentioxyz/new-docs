@@ -1,0 +1,16 @@
+{
+  "title": "Prices",
+  "pages": [
+    "get-price",
+    "add-coin-by-gecko",
+    "batch-get-prices",
+    "check-latest-price",
+    "price-list-coins",
+    "get-price-v2",
+    "list-assets-v2",
+    "add-asset-by-gecko",
+    "resolve-assets",
+    "batch-get-prices-v2",
+    "get-price-series-v2"
+  ]
+}

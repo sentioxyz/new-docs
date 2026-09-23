@@ -1,0 +1,127 @@
+---
+title: "🩺 AI Processor Diagnostics"
+---
+
+
+ The AI can analyze your existing Sentio processors to diagnose current status, identify issues, and suggest improvements. Use this to keep processors healthy, performant, and aligned with your analytics goals.
+
+ ## What It Diagnoses
+
+ - **Runtime Health**: Error rates, handler failures, missing metrics
+ - **Performance**: Event processing latency, throughput, batching efficiency
+ - **Coverage**: Tracked events vs contract ABI, unhandled high-value events
+ - **Data Quality**: Metric cardinality, label hygiene, normalization
+ - **Resource Usage**: Cost hotspots, oversized logs, unnecessary computations
+
+ ## Example Findings
+
+ - High error rate in `onSwap` handler due to missing null checks
+ - Excessive cardinality in `swap_volume_usd` labels (`recipient` too granular)
+ - Large event logs without sampling leading to high storage cost
+ - Untracked events: `Mint` and `Burn` not monitored for supply analytics
+ - Price fetch retries causing latency spikes during market volatility
+
+ ## Improvement Suggestions
+
+ - Add guard clauses and typed validators for event args
+ - Reduce label cardinality; prefer `pool` and `token_pair` over `sender`/`recipient`
+ - Introduce sampling or severity levels for `eventLogger`
+ - Implement batching for high-volume events (with awareness of stateless constraints)
+ - Cache external call results using entity store; add retry logic with exponential backoff
+ - Add dashboards and alerts for key health metrics
+
+ ## Code Patterns
+
+ ### Guard Clauses and Validation
+ ```typescript
+ .onSwap(async (event, ctx) => {
+   const { amount0, amount1 } = event.args;
+   if (!amount0 || !amount1) {
+     ctx.meter.Counter("invalid_events").add(1, { reason: "missing_amounts" });
+     return;
+   }
+   // ...
+ })
+ ```
+
+ ### Reduce Label Cardinality
+ ```typescript
+ ctx.meter.Gauge("swap_volume_usd").record(volumeUSD, {
+   pool: ctx.address,
+   token_pair: "USDC-WETH"
+ });
+ ```
+
+ ### Batching Pattern
+ ```typescript
+ import { Transfer } from './schema/schema'
+
+ // Note: This pattern uses a module-level array which has limitations.
+ // Processors are stateless and may restart or run in parallel.
+ // For production, consider using entity queries or other state management approaches.
+ const pending: Transfer[] = [];
+
+ .onTransfer(async (event, ctx) => {
+   pending.push(new Transfer({
+     id: `${ctx.transactionHash}-${event.logIndex}`,
+     // ... other transfer fields
+   }));
+
+   if (pending.length >= 100 || ctx.blockNumber % 100 === 0) {
+     await ctx.store.upsert(pending); // upsert accepts an array of entities
+     pending.length = 0;
+   }
+ })
+ ```
+
+ ### Error Handling and Retry Logic
+ ```typescript
+ import { PriceCache } from './schema/schema'
+
+ async function getPriceWithRetry(ctx: EthContext, tokenAddress: string, retries = 3) {
+   // Check if price exists in entity store for this block
+   const cacheKey = `price-${tokenAddress}-${ctx.blockNumber}`;
+   const cached = await ctx.store.get(PriceCache, cacheKey);
+   if (cached) return cached.price;
+
+   // Implement retry logic for external calls
+   for (let i = 0; i < retries; i++) {
+     try {
+       // Use contract view calls or external price oracle
+       const price = await ctx.contract.getPrice(tokenAddress);
+
+       // Cache result in entity store
+       await ctx.store.upsert(new PriceCache({
+         id: cacheKey,
+         price: price,
+         blockNumber: ctx.blockNumber
+       }));
+
+       return price;
+     } catch (error) {
+       if (i === retries - 1) throw error;
+       // Exponential backoff
+       await new Promise(resolve => setTimeout(resolve, Math.pow(2, i) * 100));
+     }
+   }
+ }
+ ```
+
+ ## How to Use
+
+ - Open the AI chat and ask: "Diagnose my processor health and suggest improvements"
+ - Provide context (project owner/slug) or attach the processor repo
+ - The AI returns a summary report with prioritized actions and code edits
+
+ ## Best Practices
+
+ - Keep handlers small with clear error handling
+ - Prefer gauges and counters with low-cardinality labels
+ - Use entity store for caching; implement retry logic for external calls
+ - Respect the stateless processor architecture; avoid module-level state
+ - Monitor health metrics and set alerts for anomalies
+ - Regularly re-run diagnostics after significant changes
+
+ **Note:** The code patterns above use documented Sentio SDK APIs. For additional context about processors, handlers, and the context object, see the [Processor Engine](/guides/collect-data/the-processors/processor-engine) and [Triggers and Handlers](/guides/collect-data/event-handlers) documentation.
+
+

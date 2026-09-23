@@ -1,0 +1,186 @@
+---
+title: "Overview"
+description: "How to write and run tests for your Sentio processor locally"
+---
+
+Developing and maintaining Sentio processors involves a cycle of coding, testing, deployment, and monitoring. This section outlines the typical workflow and the tools Sentio provides at each stage.
+
+## Typical Workflow
+
+1. **Setup & Local Development:**
+   * Create a project using `sentio create`.
+   * Add contract ABIs using `sentio add` or manually.
+   * Generate typesafe code using `sentio gen` or `sentio build`.
+   * Write processor logic in `src/processor.ts`, defining handlers and data outputs.
+2. **Local Testing:**
+   * Write unit/integration tests using the Sentio testing framework (`TestProcessorServer`).
+   * Mock input data (events, calls, blocks).
+   * Run tests locally (`sentio test`) to verify handler logic, metric emission, and entity updates.
+3. **Deployment:**
+   * Build the processor code using `sentio build`.
+   * Upload the processor to Sentio infrastructure using `sentio upload`.
+   * Optionally use `sentio upload --continue-from=<version>` for hot-swapping logic without full re-backfill.
+4. **Monitoring & Troubleshooting:**
+   * Use the Sentio UI (Data Source page) to monitor processor status (backfilling, running, errors).
+   * Check console logs and error messages.
+   * Analyze emitted metrics, logs, and entities in dashboards.
+   * Diagnose and fix runtime errors or performance issues.
+5. **Iteration:** Based on monitoring and analysis, refine processor logic, fix bugs, optimize performance, and redeploy.
+
+## Core Tools
+
+### **Sentio CLI (`@sentio/cli`):** 
+Your primary command-line interface for:
+  * `login`: Authenticating with Sentio.
+  * `create`: Creating new processor or subgraph projects.
+  * `add`: Fetching contract ABIs and adding them to your project.
+  * `gen`: Generating TypeScript types from ABIs.
+  * `build`: Compiling your processor code.
+  * `upload`: Deploying your processor to Sentio.
+  * `test`: Running local tests.
+  * `graph deploy` (for Subgraphs).
+
+### **Sentio SDK (`@sentio/sdk`):** 
+The TypeScript library providing the core classes, types, and utilities for building processors (e.g., `Processor` classes, `ctx` object, `Counter`, `Gauge`, `Entity`, chain-specific modules).
+
+### **Sentio UI (app.sentio.xyz):** 
+The web application for:
+  * Project management.
+  * **Data Source Page:** Monitoring processor status, versions, logs, errors.
+  * **Analytics/Dashboards:** Visualizing metrics and logs.
+  * **Data Studio:** Exploring entity data (SQL/GraphQL), logs.
+  * **Alerting:** Setting up alerts based on metrics or logs.
+  * **Settings:** Managing project settings, API keys, versions.
+
+### **Sentio Web IDE:** 
+An online VS Code environment for development (Pro/Enterprise plans).
+  * Accessible from the Data Source page.
+  * Pre-configured for processor development.
+  * Allows running CLI commands (`yarn install`, `build`, `upload`) directly.
+  * Suitable for quick edits or development without a full local setup.
+  * **Note:** Workspaces are temporary and restarting overwrites local changes.
+
+### **Version Management (UI):**
+  * If multi-version is enabled (paid plans), the Data Source page allows managing different processor versions.
+  * You can see historical versions, switch the active version, and abandon unwanted versions.
+
+## Testing
+
+Testing your processor logic locally before deployment is crucial for catching bugs and ensuring correctness. Sentio provides a testing framework built on the Node.js test runner (`tsx`) to simulate processor execution.
+
+### Test Setup
+
+* **Test Files:** Tests are typically placed in files ending with `.test.ts` (e.g., `src/processor.test.ts`).
+* **Node.js Version:** Requires Node.js version 22 or higher for the native test runner.
+* **Test Server:** The core component is `TestProcessorServer` from `@sentio/sdk/testing`. It loads your processor code (specified by the import path to your compiled JS output, usually `processor.js` if your source is `processor.ts`) and provides methods to simulate blockchain events.
+
+```typescript
+import { TestProcessorServer } from '@sentio/sdk/testing'
+import { describe, test, before } from 'node:test' // Using Node.js test runner
+
+// Describe the test suite
+describe('Test My Processor Logic', () => {
+  // Initialize the test server, pointing to the compiled processor output
+  const service = new TestProcessorServer(() => import('./processor.js')); // Adjust path as needed
+
+  // Start the server before running tests
+  before(async () => {
+    await service.start();
+  });
+
+  // Individual test case
+  test('should handle basic event', async () => {
+    // ... test logic using service ...
+  });
+});
+```
+
+### Simulating Events and Calls
+
+The `TestProcessorServer` instance (`service` in the example) provides chain-specific methods to simulate inputs:
+
+* **EVM:**
+  * `service.eth.testLog(log)`: Simulates a contract event log. Requires a log object matching the expected structure.
+  * `service.eth.testBlock(block)`: Simulates block-based handlers (`onBlockInterval`).
+  * `service.eth.testTrace(trace)`: Simulates trace-based handlers (`onCallXxx`).
+* **(Other Chains):** Similar methods likely exist under different namespaces (e.g., `service.aptos.*`, `service.sui.*`). Refer to SDK documentation or examples.
+
+### Mocking Input Data
+
+You need to create realistic input data (logs, blocks, transactions, calls) for your tests.
+
+* **Built-in Mocks:** The SDK often provides helpers for common types:
+  * `import { mockTransferLog } from '@sentio/sdk/eth/builtin/erc20'`
+  * Check `@sentio/sdk/<chain>/builtin/...` or `@sentio/sdk/testing` for available mocks.
+* **Manual Creation:** Construct the objects manually, ensuring they match the structure your handlers expect (based on SDK types or ABI-generated types).\
+  You often need to provide key details like the contract address the event originates from, block number, transaction hash, and the specific event/call arguments.
+
+```typescript
+// Example: Mocking an ERC20 Transfer Log
+import { mockTransferLog } from '@sentio/sdk/eth/builtin/erc20'
+import assert from 'assert' // For assertions
+
+const MOCK_TOKEN_ADDRESS = '0xToken1...';
+const MOCK_FROM = '0xSender...';
+const MOCK_TO = '0xReceiver...';
+const MOCK_VALUE = 100n * 10n**18n; // 100 tokens with 18 decimals
+
+const mockLog = mockTransferLog(MOCK_TOKEN_ADDRESS, {
+  from: MOCK_FROM,
+  to: MOCK_TO,
+  value: MOCK_VALUE
+});
+
+// Add block context if needed by your handler
+mockLog.blockNumber = 15000000;
+// ... add other relevant fields like transactionHash etc.
+```
+
+### Triggering Handlers and Making Assertions
+
+1. **Trigger:** Call the appropriate `service.<chain>.testLog/testBlock/testTrace` method with your mocked data.
+2. **Await Response:** These methods are asynchronous and return a response object containing the results of the handler execution.
+3. **Assert:** Check the response for expected outcomes:
+   * **Metrics:** `response.result.metrics` is an array of emitted metrics. Use helpers like `firstCounterValue(response.result, 'metricName')` or `summary(response.result, 'metricName')` from `@sentio/sdk/testing` or manually inspect the array.
+   * **Logs:** `response.result.logs` contains emitted event logs.
+   * **Entities:** Access the simulated entity store via `service.store`. Use `await service.store.get(EntityClass, id)` or `await service.store.list(EntityClass)` to fetch entities and assert their state.
+
+```typescript
+// Continuing the test example
+import { firstCounterValue } from '@sentio/sdk/testing' // Import helper
+import { Account } from './schema/schema.js' // Example entity import
+import assert from 'assert' // For assertions
+
+test('processes transfer correctly', async () => {
+  const mockLog = mockTransferLog(MOCK_TOKEN_ADDRESS, {
+      from: MOCK_FROM, to: MOCK_TO, value: MOCK_VALUE
+  });
+
+  // Trigger the handler
+  const resp = await service.eth.testLog(mockLog);
+
+  // Assert Metrics
+  const volCounter = firstCounterValue(resp.result, 'transfer_volume'); // Use your actual metric name
+  expect(volCounter).toEqual(100); // Assert the scaled value
+
+  // Assert Entities (assuming Account entity and logic)
+  const recipientAccount = await service.store.get(Account, MOCK_TO);
+  assert(recipientAccount, 'Recipient entity should exist');
+  // Check balance - use .toString() for comparing BigDecimals if needed
+  expect(recipientAccount.tokenBalance.isEqualTo(100)).toBe(true);
+
+  // Assert Logs (example)
+  const emittedLog = resp.result.logs.find(log => log.eventName === 'TransferProcessed');
+  expect(emittedLog).toBeDefined();
+  expect(emittedLog.attributes.to).toEqual(MOCK_TO);
+});
+```
+
+### Running Tests
+
+* **Command Line:**
+  * `yarn sentio test`: Runs all `.test.ts` files in the project.
+  * `yarn tsx --test src/specific.test.ts`: Runs a single test file.
+* **IDE Integration:**
+  * Configure your IDE (VSCode, WebStorm) to use Node.js v22+ and `tsx` as the test runner.
+  * This allows running and debugging tests directly within the IDE interface.

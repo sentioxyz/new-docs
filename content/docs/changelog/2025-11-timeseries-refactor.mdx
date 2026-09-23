@@ -1,0 +1,84 @@
+---
+title: "2025-11 TimeSeries Data Refactor"
+---
+
+## 🚀 Major Upgrade: TimeSeries Data Migration to ClickHouse
+
+We are excited to announce a significant infrastructure upgrade for Sentio's Metrics product. We have migrated our underlying TimeSeries database from TimescaleDB to **ClickHouse**, aligning it with our existing Event Log architecture. This unification brings the power of SQL to metrics, unlocking new possibilities for analysis, cross-data joins, and massive performance improvements.
+
+### 🌟 Key Highlights
+
+#### 1. Unified Database Architecture
+By moving metrics to ClickHouse, we have unified the storage engine across Sentio's data products (Metrics, Event Logs, and Entities). This consolidation simplifies the data model and provides a consistent querying experience across all data types.
+
+#### 2. SQL Support for Metrics
+You can now use **SQL** to query metrics data directly via the API or the Data Studio dashboard.
+-   **Flexible Analysis:** Go beyond standard dashboards and write custom SQL queries to slice and dice your metrics.
+-   **Cross-Data Joins:** Seamlessly join Metrics data with **Entities** and **Event Logs** in a single SQL query. Correlating protocol health metrics with specific transaction events or user entities is now easier than ever.
+
+#### 3. Significant Performance Boost
+The migration delivers a massive leap in query performance:
+-   **Efficient Aggregation:** Calculations are now pushed down from the previous TimescaleDB-based Promscale layer to raw ClickHouse functions. This powerful optimization uses native sliding windows for aggregation, making trend analysis over vast datasets lightning fast.
+-   **No Limits:** We have removed previous constraints on look-back data retrieval. You can now return results with **no limitations on metrics quantity** and **no limitations on total data points**.
+
+#### 4. Seamless Transition
+-   **Dashboard Compatibility:** Your existing dashboards continue to work as before.
+-   **No Learning Cost:** While powerful SQL capabilities are now available, the existing tools, query syntax, and workflows remain unchanged. You can continue using the platform exactly as you do today without any new learning curve.
+-   **No Extra Cost:** This upgrade is available immediately with no changes to pricing. You get better performance and capabilities at no additional cost.
+
+### 🛠️ How to Enable the New Features
+
+1.  **Update SDK:** Upgrade your project to use the new **Sentio SDK 3.0** ([Releases](https://github.com/sentioxyz/sentio-sdk/releases)) and upload a new version of your processor.
+2.  **SQL Access:** Once updated, SQL capabilities are automatically enabled, and the metrics table will be visible for querying.
+3.  **Dashboard Access:**
+    -   **Event Logs:** Enabled by default.
+    -   **Metrics (Beta):** You can enable the **Use Experimental Datasource** for metrics in the dashboard to access these new features during beta testing.
+
+### ⚠️ Breaking Changes
+
+To support these improvements, some changes were necessary that may impact existing workflows:
+
+*Please update your queries and configurations accordingly.*
+
+1.  **Event Logs System Fields:** The `system` field in Event Logs now requires a `meta.` prefix (e.g., `meta.chain`).
+
+    -   **Before:** `chain`
+    -   **After:** `meta.chain`
+
+    This change affects:
+    -   Dashboards using these fields.
+    -   Custom SQL queries.
+    -   Filters in the Log Search Panel.
+
+2.  **Accounts Page (Cohorts):** The **"All Events"** filter has been disabled in the Accounts page.
+
+3.  **Event Name Emission:** The `event_name` field is no longer emitted by default to optimize storage.
+    -   **Action Required:** If your logic relies on `event_name`, you must now explicitly emit it in your processor code.
+
+        For example, in your processor handler, you can emit the `event_name` field as follows:
+        ```typescript
+        // Example: Emitting event_name in a Sentio processor
+        processor.onEvent(async (event, ctx) => {
+            ctx.eventLogger.emit({
+                event_name: event.name, // explicitly emit event_name
+                // ...other fields
+            });
+        });
+        ```
+
+4.  **Metrics Display & Query:**
+    -   **Metric Display Names:** The display format for metrics has changed to a function-call style. For example, `sum_over_time(transfer[1h])` is now displayed as `sum_over_time(transfer, 1h)`.
+
+5.  **Aggregation Time Intervals:** We have adjusted the time intervals for aggregations to be more intuitive and consistent.
+    -   **Rollup Aggregation (`rollup_xxx`):** The time interval has changed from `(start, end]` to `[start, end)`.
+        -   *Previous:* A 2:00 timestamp calculated data from `(2:00, 3:00]`.
+        -   *New:* A 2:00 timestamp now calculates data from `[2:00, 3:00)`.
+    -   **Over-Time Aggregation (`xxx_over_time`):** A 2:00 timestamp uses data from the lookback window `(1:00, 2:00]`.
+
+### 💬 Feedback & Support
+
+This is a significant update, and your feedback is invaluable to us. If you encounter any bugs, have questions, or want to share your thoughts on the new features:
+-   **Contact Support:** Reach out via our standard support channels (Discord, Telegram, or Email).
+-   **Report Issues:** Let us know if you see any unexpected behavior in your dashboards or queries.
+
+We are committed to making this transition as smooth as possible!

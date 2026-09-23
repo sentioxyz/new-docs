@@ -1,0 +1,128 @@
+---
+title: "🧭 Metrics"
+---
+
+Metrics represent numerical data points associated with a timestamp. They are ideal for tracking trends, aggregations, and setting up alerts based on numerical thresholds.
+
+**Accessed via:** `ctx.meter`
+
+Currently, we support two types of metric data.
+
+## Counter
+
+* Represents a cumulative value that only increases (or decreases if you add negative values, though less common).
+* Each `.add(value)` call adds the `value` to the current total for that time series.
+* **Use Cases:** Total volume transferred, total fees collected, number of events occurred, cumulative user count.
+* **Example:**
+  ```typescript
+  const totalVolume = Counter.register('total_volume', { unit: 'eth' });
+  // ... in handler ...
+  totalVolume.add(ctx, event.args.value.scaleDown(18)); // Add transferred amount
+  ```
+
+## Gauge
+
+* Represents a value that can arbitrarily go up or down at any point in time.
+* Each `.record(value)` call sets the value for that specific timestamp, replacing any previous value at that exact time (though usually recorded at different timestamps).
+* **Use Cases:** Current balance, total supply, price, pool liquidity ratio, temperature, queue length.
+* **Example:**
+  ```typescript
+  const currentBalance = Gauge.register('current_balance', { unit: 'token' });
+  // ... in handler or interval ...
+  const balance = await contract.balanceOf(address);
+  currentBalance.record(ctx, balance.scaleDown(decimals)); // Record the current balance
+  ```
+
+## Series
+
+It is possible to have multiple **series** in one **metric (i.e., Counter or Gauge)**. Any label combination generates a different series (see [#labels](metrics#labels "mention")). For example, if you have a metric which uses a token symbol as a label, you'll generate multiple series in the dashboard by default. For example:
+
+![](/assets/image-3-1-1-1-1.png)
+
+You can easily sum them by using [#space-aggregation](aggregation-functions-and-formulas#space-aggregation "mention")
+
+![](/assets/af414a0aada596cf1dee0e2c702d05ba1837cbf9e04c70e193f5a7cc4d72bfe7-replace-datatype-metrics-1.gif)
+
+<br />
+
+## Submitting Metrics
+
+The simplest way to submit a metric is to call `ctx.meter` inside handler function, e.g.
+
+```typescript
+async function handleTransfer(event: TransferEvent, ctx: ERC20Context) {
+  ctx.meter.Counter('token').add(event.args.value)
+}
+```
+
+## Metric Naming
+
+A metric name can contain characters, digits, or `_`. Any other characters will be converted to `_`. It will also be truncated to 512 characters.
+
+> ⚠️ **Reserved Suffixes:**
+>
+> When naming Sentio Metrics, avoid using suffixes like **_count**, **_sum**, **_avg**, **_min**, **_max**, **_last**, or **_resolute** as these are reserved by the system.
+
+## Labels
+
+`Labels` is a map of key to string values. The key name follows the same rule as the metric name, and any reserved keywords will be appended with `_`.
+
+Our system automatically adds a few reserved labels, including **chain, version, contract\_name, contract\_address, aggregation\_minutes, aggregation\_days**. If users use these labels, an error will be returned and visible on the UI.
+
+You can also add your own custom labels to differentiate the characteristics of the thing that is being measured. For example:
+
+```typescript
+tvl.record(ctx, v, {coin: coinInfo.symbol, bridge: coinInfo.bridge, type: coinInfo.token_type.type})
+```
+
+This submits TVL with **symbol** being used as a label.
+
+> ℹ️
+>
+> Assuming there are **N** symbols, **M** bridges and **K** coin types, the total number of series generated could be as large as **N \* M \* K** (but won't exceed the total number of points submitted). Read [avoid-high-cardinality](avoid-high-cardinality) for more details.
+
+## Descriptor
+
+Sometimes you want to give the metric more information, or want to share the same `counter`/`gauge` in different handler functions. In these cases, you can first declare your counter with an optional descriptor.
+
+```typescript
+const tokenCount = Counter.register(
+  'token_count',
+  { description: 'token transferred to my wallet',
+    unit: 'eth'
+  })
+```
+
+and then use them as
+
+```typescript
+async function handleTransfer(event: TransferEvent, ctx: ERC20Context) {
+  tokenCount.add(ctx, event.args.value)
+}
+```
+
+## Resolution
+
+You can define pre-aggregation rules for the metrics
+
+```typescript
+export const gaugeOptions: MetricOptions = {
+  sparse: true,
+  aggregationConfig: {
+    intervalInMinutes: [60],
+    discardOrigin: true,
+  }
+}
+
+export const vol = Gauge.register("vol", gaugeOptions)
+```
+
+This will generate 2 new metrics vol\_count and vol\_sum.
+
+* **vol\_count** represents the count of data pre-aggregated every 60 minutes.
+* **vol\_sum** represents the sum of data pre-aggregated every 60 minutes.
+* The original metric **vol** will be omitted since `discardOrigin` is true.
+
+> ℹ️
+>
+> We only support resolution of `gauge` at this point.

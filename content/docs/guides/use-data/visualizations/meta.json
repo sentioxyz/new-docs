@@ -1,0 +1,10 @@
+{
+  "title": "🔍 Visualizations",
+  "pages": [
+    "dashboard",
+    "metrics-dashboard",
+    "event-analytics-dashboard",
+    "aggregation-functions-and-formulas",
+    "variables"
+  ]
+}

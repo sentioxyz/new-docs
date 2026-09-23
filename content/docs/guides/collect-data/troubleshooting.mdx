@@ -1,0 +1,76 @@
+---
+title: "🛟 Troubleshooting"
+description: "Diagnosing and resolving common errors and performance issues in processors."
+---
+
+Once your processor is deployed, occasional troubleshooting are essential to ensure it runs correctly and efficiently.
+
+## Troubleshooting Common Errors
+
+Processors can stop due to various errors. Refer to this list for common causes and solutions:
+
+### **Quota Exceeded:**
+   * **Symptom:** Processor stops with a "Quota exceeded" message.
+   * **Cause:** Exceeded resource limits of your Sentio plan.
+   * **Solution:** Upgrade plan or optimize processor (see `Performance Tuning` below and [Cost Reduction](/guides/best-practices/cost-reduction) best practice).
+
+### **Time Series Exceeds Limit (High Cardinality):**
+   * **Symptom:** Error related to too many time series (\~10k limit per metric).
+   * **Cause:** Using high-cardinality labels (addresses, hashes) in metrics.
+   * **Solution:** Use Event Logs or Entities for high-cardinality data. (See [Avoiding High Cardinality](/guides/best-practices/avoid-high-cardinality)).
+
+### **Invalid Label/Metric Name:**
+   * **Symptom:** Error about invalid names.
+   * **Cause:** Using invalid characters or reserved names.
+   * **Solution:** Rename according to rules (letters, numbers, `_`) and avoid reserved keywords. Re-upload.
+
+### **Runtime Errors in Handler Code:**
+   * **Symptom:** Generic error, potentially pointing to a code line.
+   * **Cause:** Bugs in TypeScript (null access, type errors, etc.).
+   * **Solution:** Debug using logs (`console.log`, `ctx.eventLogger`), test locally, wrap code in `try...catch`, log detailed error info.
+
+### **RPC/Node Errors (e.g., Ethers Errors):**
+   * **Symptom:** Failed contract view calls (`ctx.contract.*`).
+   * **Cause:** Wrong address/network, invalid block number for call, node issues, incorrect ABI/args.
+   * **Solution:** Verify address/network, log context (`ctx.blockNumber`, `ctx.network`), use `try...catch`, check ABI, contact support if node issues suspected.
+
+## Troubleshooting Performance Issues
+
+If your processor backfill is too slow or queries are lagging:
+
+### **Slow Query Speed:**
+   * **Cause:** Too many metric data points being queried.
+   * **Solution:**
+     * Use **Metric Resolution** (pre-aggregation) for Gauges in processor code (`aggregationConfig`).
+     * Optimize dashboard query time ranges and UI aggregations.
+     * Emit metrics less frequently if feasible.
+
+### **Slow Processor Backfill:**
+   * **Cause:** Excessive RPC calls, complex logic, high interval frequency, processing full history.
+   * **Solution:**
+     * **Minimize RPC Calls:** Prioritize data from event/call arguments.
+     * **Optimize Logic:** Use profiling (see below).
+     * **Adjust Backfill Intervals:** Use larger `backfillInterval` for `onBlockInterval`/`onTimeInterval`.
+     * **Use`startBlock`:** Limit historical processing.
+     * **Use Event Filters:** Reduce unnecessary handler executions.
+
+### **Profiling (Performance Bottlenecks):**
+   * **Tool:** Use the **Profile** feature in the Data Source -> System Monitor section of the Sentio UI.
+   * **Process:**
+     1. Start recording for a chosen duration.
+     2. Download the generated profile file (`.cpuprofile`).
+     3. Load the file into a flame graph tool (e.g., Chrome DevTools -> Performance -> Load profile...).
+     4. Analyze the chart (especially the "Bottom-Up" view) to identify functions consuming the most CPU time. These are your primary targets for optimization.
+
+## Getting Help
+
+If you have questions or need assistance, our support team is ready to help.
+
+**Before contacting us, please take a moment to review the[ support request format](https://docs.sentio.xyz/update/docs/getting-support#/) guidelines. Providing complete information will help us resolve your issue more quickly and accurately.**
+
+You can reach out to us via:
+
+* [Email Support](mailto:support@sentio.xyz)
+* [Discord Community](https://discord.gg/vSdkMYqnjb)
+* [Telegram Channel](https://t.me/sentioxyz)
+* Slack Connect

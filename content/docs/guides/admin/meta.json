@@ -1,0 +1,9 @@
+{
+  "title": "Admin",
+  "pages": [
+    "api-key",
+    "permission-and-sharing",
+    "quotas-and-limits",
+    "concepts"
+  ]
+}

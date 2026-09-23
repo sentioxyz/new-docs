@@ -1,0 +1,94 @@
+---
+title: "⏰ Alerts"
+---
+
+Alerts can be created for a query or formula to notify (via [notification-channel](notification-channel "mention")) when a certain condition is met.
+
+## Metrics based alert
+
+Assume we want to alert if TVL of your project is below a threshold, you could
+
+* Select the metric that represents the TVL
+* Add an alert condition
+* Choose a notification channel [notification-channel](notification-channel "mention")
+
+![](/assets/creatingalert.gif)
+
+> ℹ️
+>
+> Note you can also use [formula](aggregation-functions-and-formulas) in alerts
+
+## Log based Alerts
+
+You can count a certain number of logs matching criteria, and set up alerts based on the condition.
+
+![](/assets/log.gif)
+
+## SQL based Alerts
+
+SQL based alerts allow you to write custom SQL queries to define alert conditions. This provides flexibility to create complex alerts based on your data.
+
+![](/assets/sql_alert_edit.png)
+
+### 1. SQL Query
+
+Write your SQL query in the editor. The query must include at least a time column and a value column in the `SELECT` clause if you are using a column-based condition.
+
+*   Use `$startTime` and `$endTime` variables to replace the time range of the alert.
+*   Example: `SELECT timestamp, amount FROM Transfer WHERE timestamp between ${startTime} AND ${endTime}`
+
+### 2. Condition
+
+There are two types of conditions you can set:
+
+**Column-based Condition:**
+Evaluate the query result based on specific columns.
+*   **Time Column:** Select the column representing the timestamp.
+*   **Value Column:** Select the column representing the value to check.
+*   **Aggregation:** Choose an aggregation function (avg, sum, min, max, count).
+*   **Operator:** Choose a comparison operator (>, >=, &lt;, &lt;=, ==, !=, between).
+*   **Threshold:** Set the value to compare against.
+
+**Row-based Condition:**
+Trigger an alert based on the presence or absence of rows in the query result.
+*   **Trigger when:** Choose "any row" or "no row" is returned.
+
+## Message
+
+Customize the alert message. You can use variables to include dynamic content from your query results.
+
+## Notification
+
+Select the notification channels (e.g., Email, Discord, Telegram) where you want to receive the alert. You can also group notifications and set other options like "Skip Notification on Resolved" and "Notify on Error".
+
+## Advanced
+
+*   **Evaluation Interval:** How often the alert condition is checked.
+*   **Grace Period:** The time to wait before sending another alert if the condition persists.
+*   **Auto Close After:** Automatically close the alert if the condition is no longer met after a certain time.
+*   **Max Incidents:** Limit the number of incidents created by this alert.
+
+
+## Alert Message
+
+Beyond static content, you can also reference variables inside your alert message. In log based alert, you can use `.Samples` to reference the list of the event log instances. e.g. For event log recorded an `amount` field, you can customize the message like this:
+
+```
+Transfer events found:
+{{ range .Samples }}
+value {{.amount}}, at chain: {{.chain}}
+{{ end }}
+```
+
+The syntax is straightforward here:
+
+* `{{.VARIABLE_NAME}}` is to reference a variable or field (same as you defined in your event log) by name.
+* `{{range .VARIABLE_NAME}} ... {{ end }}` is to loop through a list of elements if the variable is a list.
+
+
+
+## Viewing Alert Instances
+
+When you receive an alert instance (assuming through email channel), you can find the attached link that directly takes you to the alert instance page.
+
+![Viewing Alert Instance](/assets/alertinstance.gif)

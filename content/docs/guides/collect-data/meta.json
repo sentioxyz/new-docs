@@ -1,0 +1,14 @@
+{
+  "title": "Collect Data",
+  "pages": [
+    "the-processors",
+    "event-handlers",
+    "multi-chain",
+    "data-outputs",
+    "the-monitoring",
+    "development-and-testing",
+    "troubleshooting",
+    "error-codes",
+    "supported-network"
+  ]
+}

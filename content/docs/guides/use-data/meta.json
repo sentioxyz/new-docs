@@ -1,0 +1,15 @@
+{
+  "title": "Use Data",
+  "pages": [
+    "view-metrics",
+    "view-and-search-event-logs",
+    "data-studio",
+    "visualizations",
+    "notification-channel",
+    "alerts",
+    "endpoint",
+    "materialized-views",
+    "action-processor",
+    "cross-project-reference"
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "title": "🗂️ Data Type",
+  "pages": [
+    "overview",
+    "metrics",
+    "event-logs",
+    "entities",
+    "webhook"
+  ]
+}

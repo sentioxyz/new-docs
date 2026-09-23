@@ -1,0 +1,99 @@
+---
+title: "Sentio SDK 4.0 Released"
+---
+
+We're excited to announce **Sentio SDK 4.0**! This major release significantly upgrades indexing for two of the fastest-moving ecosystems on Sentio — **Solana** and **Sui** — with modern decoding libraries, richer processor APIs, and faster, more complete on-chain data via gRPC.
+
+> **🤖 Let AI handle the migration.** Whichever chain you're on, you can upgrade your processor to SDK 4.0 automatically with the [sentio-ai-kit](https://github.com/sentioxyz/sentio-ai-kit) Claude Code skill — it walks your processor through the required changes for you, so you don't have to apply them by hand.
+
+If you are still in SDK 2.0, please also read [SDK 3.0 release notes](/changelog/sentio-sdk-30-released) which is also included.
+
+## ☀️ Solana: Index the Full Chain History
+
+The headline Solana improvement in 4.0 is **dramatically deeper historical indexing**. Solana mainnet is now served by a new **ClickHouse + BigQuery-backed data source** instead of fetching directly from a node's JSON-RPC endpoint.
+
+What this means for you:
+
+* **Backfill much deeper history.** Your processor is no longer constrained by a node's limited retention window — historical data is served from an archival tier instead.
+* **Faster, more reliable backfills.** Historical transactions are served from columnar storage rather than reconstructed via slow client-side signature-cursor scanning, so large backfills run faster and more consistently.
+* **No setup required.** This applies automatically to Solana mainnet processors on SDK 4.0 — just set your processor's start block as far back as your plan allows.
+
+**Backfill limits by plan:**
+
+* **Free** and **Pay-as-you-go** users can backfill up to **3 months** of historical data.
+* **Enterprise** and whitelisted users have **no backfill limit** and can index the full available history.
+
+Alongside this, the SDK's Solana decoding stack was modernized onto `@anchor-lang/core` and `@solana/kit`, and a new `SPLToken2022Processor` adds out-of-the-box indexing for the Token-2022 (Token Extensions) program — metadata, token groups, and confidential transfers.
+
+## 🌊 Sui: gRPC Data Source & Unified Object Types
+
+### Faster, more complete data via gRPC
+
+Sui processors now load data over **gRPC** instead of JSON-RPC. You get faster ingestion, more complete transaction execution details, and consistent strongly-typed payloads across events, function calls, and transactions.
+
+> **⏳ Action needed: Sui is deprecating JSON-RPC.** Sui's full-node JSON-RPC API is being phased out in favor of gRPC. Processors on SDK 3.x still rely on JSON-RPC and will stop working once it is removed. **Upgrade to SDK 4.0 as soon as possible** to move onto the gRPC data path and keep your Sui indexing running.
+
+### Unified object-change types
+
+Object-change handlers now receive Sui's **unified&#x20;**`SuiClientTypes` objects — the same types exposed by `@mysten/sui` — normalized at the SDK boundary. Your handler code stays stable regardless of the underlying transport, and you work with the same object shapes you already know from the Sui SDK.
+
+### A processor for every indexing pattern
+
+The way most developers build Sui processors is with **generated bindings**. Run `sentio gen` against your Move package and the SDK produces a typed processor per module, complete with strongly-typed handlers for every entry function and event — no manual ABI wiring or decoding required:
+
+```typescript
+// Generated from your Move package — fully typed handlers
+pyth.bind({ address: "0x..." })
+  .onEntryUpdatePriceFeed((call, ctx) => {
+    // call arguments and event payloads are decoded and typed for you
+  })
+```
+
+For lower-level or non-module-based indexing, SDK 4.0 also provides processors for other common patterns:
+
+| Processor                   | Use it to…                                            |
+| --------------------------- | ----------------------------------------------------- |
+| `SuiObjectTypeProcessor<T>` | Index all objects of a given Move type, fully decoded |
+| `SuiObjectProcessor`        | Track a specific object by ID on an interval          |
+| `SuiAddressProcessor`       | Watch all objects owned by an address                 |
+| `SuiWrappedObjectProcessor` | Track objects wrapped inside other objects            |
+| `SuiGlobalProcessor`        | Monitor events/transactions globally with filters     |
+
+Handlers across these include `onEvent` / `onMoveEvent`, `onTransactionBlock`, `onEntryFunctionCall`, `onObjectChange`, and interval triggers (`onTimeInterval`, `onCheckpointInterval`) — all with type-safe Move struct decoding.
+
+## 🔧 Build & Dependency Improvements
+
+SDK 4.0 also modernizes the build toolchain and trims custom forks:
+
+* **Faster builds with tsdown.** Processors now bundle with **[tsdown](https://tsdown.dev)** (powered by Rolldown/oxc) instead of the previous tsup-based pipeline, for faster, more reliable builds.
+* **Standard, upstream ethers.** Ethereum support now uses **upstream&#x20;**`ethers`**&#x20;6.x** directly instead of a Sentio fork, improving compatibility with the broader ecosystem and keeping you current with upstream fixes.
+
+## 🛠️ How to Upgrade
+
+1. **Update dependencies** to the new major versions:
+   ```bash
+   pnpm add @sentio/sdk@^4.0.0 @sentio/cli@^4.0.0
+   ```
+2. **Upgrade to Node.js 24+.**
+3. **Rebuild, re-test, and re-upload** your processor:
+   ```bash
+   sentio build
+   sentio test
+   sentio upload
+   ```
+4. **For errors:&#x20;**&#x75;se [**sentio-ai-kit**](https://github.com/sentioxyz/sentio-ai-kit) AI skill to fix, or if you prefer do it manually check the reference [here.](https://github.com/sentioxyz/sentio-ai-kit/blob/main/skills/sentio-processor/references/sui-sdk4-migration.md)
+
+### Do you need to re-index?
+
+* **Upgrading from SDK 3.x → 4.0:** No re-index required. The upgrade is **[hot-swappable](/guides/collect-data/development-and-testing/cli-reference#sentio-upload)** — upload your 4.0 processor and it continues from where your existing version left off.
+* **Upgrading from SDK 2.x → 4.0:** A **full re-index is required**. The data model changed in SDK 3.0, so 2.x processors cannot hot-swap to 4.0 and must re-index from your configured start block. Please take a look at [v3 change](/changelog/sentio-sdk-30-released) log for more details.&#x20;
+* **What's the cost:&#x20;**&#x41;t Sentio, backfill data is always **free**, cost will generated after catching up. More on [Billing.](/guides/admin/quotas-and-limits) &#x20;
+
+## 💬 Feedback & Support
+
+If you run into issues upgrading or have feedback:
+
+* **Contact Support:** Reach out via Discord, Telegram, or Email.
+* **Report Issues:** Open an issue on the [sentio-sdk repository](https://github.com/sentioxyz/sentio-sdk/issues).
+
+<br />

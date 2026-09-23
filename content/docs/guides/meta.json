@@ -1,0 +1,16 @@
+{
+  "title": "Guides",
+  "description": "Guides from first steps to advanced usage",
+  "root": true,
+  "pagesIndex": "index",
+  "pages": [
+    "introduction",
+    "collect-data",
+    "use-data",
+    "admin",
+    "sentio-debugger",
+    "best-practices",
+    "integrations",
+    "support"
+  ]
+}

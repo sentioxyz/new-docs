@@ -1,0 +1,60 @@
+---
+title: "Compute Network"
+---
+
+The **Compute Network** is the layer of Sentio Nodes that executes processors. It turns raw on-chain data into structured, indexed datasets and serves real-time computation, aggregation, and analytics in coordination with the [Storage Network](storage-network).
+
+## Role in the Architecture
+
+Each Compute Node (also called an **indexer**) runs one or more processor replicas. A processor describes what to read from chain and how to transform it; the Compute Network is responsible for actually running that program, keeping it caught up to the head, and writing its output into the Storage Network.
+
+The Compute Layer and Storage Layer scale independently. A processor may run as multiple replicas on different continents while its data is replicated to nearby Storage Nodes that do not run the processor itself.
+
+![Independent scaling of Compute and Storage layers across nodes](/assets/sentio-network-p4-0.png)
+
+## Processor Lifecycle
+
+Processors are first-class on-chain objects. Their lifecycle is driven by two contracts on Sentio EVM:
+
+| Contract              | Purpose                                                                |
+| --------------------- | ---------------------------------------------------------------------- |
+| `ProcessorRegistry`   | Records processor identity, owner, IPFS bundle CID, required chains.   |
+| `Controller`          | Starts/stops processors and assigns each one to an eligible indexer.   |
+
+The flow:
+
+1. **Upload** — the processor bundle is pinned to IPFS and a CID is produced.
+2. **Create** — `ProcessorRegistry.createProcessor` registers the processor on-chain.
+3. **Start** — `Controller.startProcessor` schedules execution; `Controller` selects an indexer based on stake, capacity, and SU cost (see [Tokenomics](token-economy)).
+4. **Run** — the assigned indexer downloads the bundle, runs it, and writes results to the processor's database in the Storage Network.
+5. **Stop** — `Controller.stopProcessor(string)` halts execution. Only the processor owner, an operator of the owner, or an explicit processor admin can start or stop a processor.
+
+For the operational commands and CLI flags, see [Access the Network](access-the-network).
+
+## Replicas and Capabilities
+
+Each processor replica is identified by `${processorId}_${replicaIndex}`. Today every processor runs as a single replica (`replicaIndex = 0`); the schema is forward-compatible with multi-replica deployments where the same processor runs in multiple regions for availability and lower latency.
+
+Indexers advertise their capabilities (supported chains, hardware tier, region) at registration. `Controller` only assigns a processor to indexers whose capabilities match the processor's `required-chain-id` set.
+
+## Node JSON-RPC
+
+Every indexer exposes a JSON-RPC server on its compute-node RPC port (advertised via `IndexerRegistry`) for inspecting processor execution. The endpoint is location-transparent: hitting any indexer for a processor not local to it forwards the request to whichever indexer hosts the processor.
+
+| Method                   | Returns                                                                                                                                |
+| ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `sentio_nodeStatus`      | Node identity + sync status: node type, indexer ID, current block, head block, registered capabilities.                                |
+| `sentio_processorStatus` | Per-chain progress for a processor: processed block / timestamp, state (`CATCHING_UP` / `PROCESSING` / …), SDK version, entity schema. |
+| `sentio_processorLogs`   | Recent driver logs for a processor (paged via `limit` + cursor).                                                                       |
+
+For example invocations, see [Access the Network](access-the-network#monitor-processors-via-node-json-rpc).
+
+## Billing
+
+Indexing work is metered in **Sentio Units (SU)** and billed to the **processor owner** via the `Billing` contract:
+
+* Each new data point produced by the processor consumes a fixed SU amount (see [Tokenomics](token-economy)).
+* The SU-to-$ST exchange rate is set by the assigned indexer at job-start time and is **locked for one month** for that processor, giving developers price predictability.
+* If the owner's Billing balance runs out, the processor is paused until it is topped up.
+
+Query fees, by contrast, are billed to the query initiator and are described in the [Storage Network](storage-network) chapter.

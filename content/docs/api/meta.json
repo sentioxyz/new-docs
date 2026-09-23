@@ -1,0 +1,23 @@
+{
+  "title": "API Reference",
+  "description": "Complete reference for the Sentio REST API",
+  "root": true,
+  "pagesIndex": "index",
+  "pages": [
+    "api-access",
+    "ai",
+    "alerts",
+    "analytics",
+    "dashboards",
+    "eventlogs",
+    "insights",
+    "metrics",
+    "move",
+    "prices",
+    "processors",
+    "projects",
+    "solidity",
+    "sql",
+    "users"
+  ]
+}

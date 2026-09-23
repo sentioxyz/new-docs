@@ -1,0 +1,218 @@
+---
+title: "🧮 AI SQL Generation"
+---
+
+
+## How It Works
+
+### Natural Language Processing
+The AI understands blockchain terminology and data patterns:
+- **Domain Knowledge**: Recognizes DeFi protocols, token standards, transaction types
+- **Schema Awareness**: Knows your project's tables, columns, and relationships
+- **Query Optimization**: Generates efficient queries with proper indexing
+- **Error Prevention**: Avoids common SQL mistakes and performance issues
+
+### Smart Table Selection
+Instead of querying all tables, the AI:
+- Analyzes your question to identify relevant data
+- Selects optimal tables based on semantic similarity
+- Considers table size and query performance
+- Explains why specific tables were chosen
+
+## Supported Query Types
+
+### Time-Series Analysis
+Natural Language: "Show me daily transaction volumes for the past month"
+
+```sql
+SELECT 
+    DATE_TRUNC('day', block_time) AS day,
+    COUNT(*) AS transaction_count,
+    SUM(value_usd) AS volume_usd
+FROM ethereum_transactions 
+WHERE block_time >= NOW() - INTERVAL '1 month'
+GROUP BY 1
+ORDER BY 1
+```
+
+### Aggregations & Grouping
+Natural Language: "Top 10 tokens by trading volume this week"
+
+```sql
+SELECT 
+    token_symbol,
+    token_address,
+    SUM(volume_usd) AS total_volume
+FROM dex_trades
+WHERE block_time >= DATE_TRUNC('week', NOW())
+GROUP BY token_symbol, token_address
+ORDER BY total_volume DESC
+LIMIT 10
+```
+
+### Complex Filtering
+Natural Language: "Failed transactions with gas usage above 100k"
+
+```sql
+SELECT 
+    hash,
+    from_address,
+    to_address,
+    gas_used,
+    gas_price,
+    block_time,
+    error_message
+FROM ethereum_transactions
+WHERE status = 'failed'
+  AND gas_used > 100000
+ORDER BY block_time DESC
+```
+
+### Multi-Table Joins
+Natural Language: "Show me Uniswap pools with their token information"
+
+```sql
+SELECT 
+    p.pool_address,
+    p.fee_tier,
+    t0.symbol AS token0_symbol,
+    t1.symbol AS token1_symbol,
+    p.tvl_usd,
+    p.volume_24h
+FROM uniswap_v3_pools p
+JOIN tokens t0 ON p.token0 = t0.address
+JOIN tokens t1 ON p.token1 = t1.address
+WHERE p.tvl_usd > 1000000
+ORDER BY p.tvl_usd DESC
+```
+
+## Advanced Features
+
+### Query Explanation
+Every generated query includes:
+- **Plain English Summary**: What the query does
+- **Table Usage**: Why specific tables were selected
+- **Performance Notes**: Index usage and optimization tips
+- **Result Schema**: Expected output columns and data types
+
+### Automatic Optimization
+The AI applies SQL best practices:
+- **Index Usage**: Leverages existing database indexes
+- **Query Rewriting**: Optimizes for ClickHouse columnar storage
+- **Memory Management**: Limits result sets for large datasets
+- **Partition Pruning**: Uses date partitioning when available
+
+### Error Detection & Fixing
+When queries fail, the AI can:
+- Analyze error messages and suggest fixes
+- Rewrite queries to avoid common issues
+- Suggest alternative approaches
+- Explain why the original query failed
+
+## Query Refinement
+
+### Iterative Improvement
+Start with a basic query and refine:
+
+1. "Show me Ethereum transactions"
+2. "Only from the last 24 hours"
+3. "With value greater than 1 ETH"
+4. "Ordered by gas price, highest first"
+
+### Performance Optimization
+Ask the AI to optimize queries:
+- "Make this query faster"
+- "Reduce memory usage for this query"
+- "Add proper indexes for better performance"
+- "Limit results to avoid timeouts"
+
+### Data Quality
+Improve data accuracy:
+- "Exclude test transactions"
+- "Only include successful transactions"
+- "Filter out contract creation transactions"
+- "Remove duplicate entries"
+
+## Best Practices
+
+### Effective Prompts
+- **Be Specific About Time Ranges**: "Transactions from the past 7 days"
+- **Specify Data Granularity**: "Daily trading volumes aggregated by hour"
+- **Include Business Logic**: "Active users (those who made transactions)"
+- **Mention Edge Cases**: "Exclude mints and burns"
+
+### Performance Considerations
+- Use time filters and reasonable limits
+- Choose appropriate aggregation levels for the analysis window
+
+## Query Templates
+
+### Token Analysis
+```sql
+-- Token holder distribution
+SELECT 
+    balance_tier,
+    COUNT(*) AS holder_count,
+    SUM(balance) AS total_balance
+FROM (
+    SELECT 
+        address,
+        balance,
+        CASE 
+            WHEN balance < 100 THEN '0-100'
+            WHEN balance < 1000 THEN '100-1K'
+            WHEN balance < 10000 THEN '1K-10K'
+            ELSE '10K+'
+        END AS balance_tier
+    FROM token_balances
+    WHERE token_address = '0x...'
+) t
+GROUP BY balance_tier
+ORDER BY MIN(balance)
+```
+
+### DeFi Protocol Analysis
+```sql
+-- Liquidity pool performance
+SELECT 
+    pool_address,
+    DATE_TRUNC('day', block_time) AS day,
+    AVG(tvl_usd) AS avg_tvl,
+    SUM(volume_usd) AS daily_volume,
+    SUM(fees_usd) AS daily_fees,
+    SUM(fees_usd) / NULLIF(AVG(tvl_usd), 0) * 365 AS apr
+FROM pool_snapshots
+WHERE block_time >= NOW() - INTERVAL '30 days'
+GROUP BY 1, 2
+ORDER BY 1, 2
+```
+
+### Transaction Analysis
+```sql
+-- Gas usage patterns
+SELECT 
+    DATE_TRUNC('hour', block_time) AS hour,
+    AVG(gas_price) AS avg_gas_price,
+    PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY gas_price) AS median_gas_price,
+    COUNT(*) AS tx_count,
+    SUM(CASE WHEN status = 'failed' THEN 1 ELSE 0 END) AS failed_count
+FROM ethereum_transactions
+WHERE block_time >= NOW() - INTERVAL '1 day'
+GROUP BY 1
+ORDER BY 1
+```
+
+## Troubleshooting
+
+- "Table not found": Verify table names and access
+- "Query timeout": Add time filters and adjust granularity
+- "No results returned": Check filters and date ranges
+- "Column doesn't exist": Browse schema and verify spelling/case
+
+## Integration with Dashboards
+
+- Save generated SQL to your query library
+- Create visualizations from AI-suggested chart types
+- Schedule reports and set up alerts based on query results
+
+

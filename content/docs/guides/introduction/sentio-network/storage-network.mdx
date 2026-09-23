@@ -1,0 +1,89 @@
+---
+title: "Storage Network"
+---
+
+The **Storage Network** is the layer of Sentio Nodes that holds blockchain and processor-indexed data. It speaks the native **ClickHouse protocol** so any ClickHouse-compatible client can query it, while access control and billing are enforced on-chain.
+
+## Role in the Architecture
+
+The Storage Network stores two kinds of data:
+
+* **Processor-indexed data** — the structured output of processors running on the [Compute Network](compute-network).
+* **User data** — arbitrary databases that developers create and write to directly.
+
+Storage and compute scale independently. Data written by a processor on one node can be replicated to nearby Storage Nodes for availability and lower query latency, even if those nodes do not run the processor itself.
+
+## Permission Model
+
+Every database tracks a 4-bit permission bitmask per address, stored on chain in the `databases` contract. There are no per-table permissions — access is granted at the database level only.
+
+| Bit    | Name  | Grants                                                    |
+| ------ | ----- | --------------------------------------------------------- |
+| `0x01` | Read  | `SELECT`, `SHOW TABLES`, `DESCRIBE`                       |
+| `0x02` | Write | `INSERT`, `ALTER`, `DELETE`, `CREATE TABLE`, `DROP TABLE` |
+| `0x04` | Admin | `GRANT` / `REVOKE`                                        |
+| `0x08` | Owner | All of the above, plus `DROP DATABASE`                    |
+
+`Admin` alone does **not** imply Read or Write — it is purely a delegation bit. An Admin can only grant or revoke the Read/Write bits it itself holds. A pure-Admin account (e.g. someone granted `Admin` without `Read`) can manage other people's permissions but cannot read or write the data. `Owner` is the only role with no such restriction.
+
+## Database Types
+
+Two kinds of databases live in the Storage Network. They differ only in who is allowed to write to them.
+
+### User Databases
+
+For a database you can write to directly, create one with plain `CREATE DATABASE`. The creator becomes the **Owner** (full read/write/admin/grant), and standard ClickHouse DDL/DML works as expected:
+
+```sql
+CREATE DATABASE my_notes;
+USE my_notes;
+
+CREATE TABLE notes (id UInt64, msg String) ENGINE = MergeTree() ORDER BY id;
+INSERT INTO notes VALUES (1, 'hello'), (2, 'world'), (3, 'sentio');
+SELECT * FROM notes ORDER BY id;
+DELETE FROM notes WHERE id = 2;
+
+DROP TABLE notes;
+DROP DATABASE my_notes;
+```
+
+As Owner you can grant any combination of Read/Write/Admin to any address using the same syntax as for processor databases.
+
+### Processor Databases
+
+Each processor replica gets a database named `${processorId}_${replicaIndex}` (e.g. `fv2CWEeV_0`). Processor databases are designed to be a faithful, reproducible function of on-chain history, so writes are reserved for the processor's own handler logic running on the assigned indexer.
+
+Default permissions at creation time:
+
+* The **processor owner** gets `Admin + Read` (`0x05`) — read the data and grant/revoke Read to others, but **cannot write**.
+* The **assigned indexer** is the only writer.
+
+The owner shares read access through standard `GRANT` / `REVOKE`:
+
+```sql
+USE fv2CWEeV_0;
+
+-- Per-address grant
+GRANT  SELECT ON fv2CWEeV_0 TO   '0x4F070AB509a55A3e11743d638A866991328Ce560';
+REVOKE SELECT ON fv2CWEeV_0 FROM '0x4F070AB509a55A3e11743d638A866991328Ce560';
+
+-- Public read (zero address = wildcard)
+GRANT  SELECT ON fv2CWEeV_0 TO   '0x0000000000000000000000000000000000000000';
+REVOKE SELECT ON fv2CWEeV_0 FROM '0x0000000000000000000000000000000000000000';
+```
+
+> **Always `USE` the database before `GRANT` / `REVOKE`.** Otherwise the statement fails with `commitgate (GRANT): permission tx ... execution reverted`. Setting `--database` in the handshake works too.
+
+## Query Authentication
+
+The Storage Network speaks the ClickHouse protocol natively, but instead of username/password, every query must be **signed by an Ethereum key** whose Billing balance covers the fee. Clients run a local **sidecar** that signs outbound queries with the configured key — see [Access the Network](access-the-network) for setup.
+
+## Billing
+
+Storage and query work are metered in **Sentio Units (SU)**:
+
+* **Query fees** are charged to the **query initiator** — i.e. the key that signed the query.
+* `CREATE DATABASE`, `CREATE TABLE`, and DML on a user database all count as queries and are billed to the signer.
+* To bill a different account (e.g. let a teammate query against your balance), that account must call `Permissions.addOperator(yourKey)` first.
+
+For SU rates and the SU-to-$ST exchange model, see [Tokenomics](token-economy).

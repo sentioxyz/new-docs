@@ -1,0 +1,59 @@
+---
+title: "Overview"
+description: "Learn about the two ways Sentio collects on-chain data native Sentio Processors and Hosted Subgraphs. "
+---
+
+Sentio lets users to collect (*ingests* & *processes*) and *consumes* blockchain data through a streamlined process.
+
+The core purpose of Sentio's data collection is to transform the vast and raw blockchain data (like transactions and events) into structured, meaningful, and actionable insights. Instead of dealing directly with low-level blockchain details, Sentio allows you to focus on the data that relevant for your contracts.
+
+**Think of it like this:** Blockchain data is like a fast-flowing river. Sentio helps you to capture exactly the water (data) you need and measure its properties (insights).
+
+## The Processor
+
+At the heart of Sentio is the **Processor**. A Processor is typically a TypeScript program that you write using the Sentio SDK. It contains the logic that defines:
+
+1. **Processor Type (What to watch):** Which smart contracts, wallets, or specific blockchain primitives (e.g. Object) to monitor.
+2. **Triggers and Handlers (How to react):** What to perform when specific events happen.
+3. **Data Type (What to output):** How to record or export the data
+
+![](/assets/dd943b2d7099ff70ccfc2d7c36c794b4b5a9812e406ab7fa94e245342afff59e-image.png)
+
+## Event-Driven Architecture
+
+Sentio operates on an **event-driven architecture**. Your Processor code doesn't run constantly; instead, it "wakes up" and executes specific functions, called **Handlers**, in response to defined blockchain **Triggers**.
+
+* You define triggers like `onEventTransfer` (when a Transfer event occurs), `onBlockInterval` (every N blocks), `onTransaction` (when a transaction involving your contract) and `onCallDeposit` (when a Deposit call is made to your contract), etc.
+* When a match happens on the blockchain, Sentio triggers the corresponding handler function in your Processor.
+* This function receives relevant data about the trigger (e.g., the `from`, `to`, and `value` field of a transfer event) and a `Context` object (`ctx`) to receive relevant context data and interact with Sentio services.
+
+```typescript
+// Example: Reacting to an ERC20 Transfer event
+import { ERC20Processor, ERC20Context, TransferEvent } from '@sentio/sdk/eth/builtin/erc20'
+import { EthChainId } from '@sentio/sdk/eth'
+
+ERC20Processor.bind({ address: '0xSomeTokenAddress', network: EthChainId.ETHEREUM })
+  .onEventTransfer(async (event: TransferEvent, ctx: ERC20Context) => {
+    // This code runs ONLY when a Transfer event occurs for the bound contract
+    console.log(`Transfer detected: From ${event.args.from} to ${event.args.to}`);
+    // Use the context 'ctx' to record data
+    ctx.meter.Counter('transfer_volume').add(event.args.value);
+  });
+```
+
+## Sentio Processor vs. Hosted Subgraph Processors
+
+While Sentio processor provides maximum performance and flexibility, we also support hosted-subgraph that still has many features like SQL/GraphQL API, analytic dashboard, and multi-versioning. This allows you to easily run data pipelines on Sentio without writing new code. Both run on Sentio's infrastructure but differ in their development approach and capabilities:
+
+### **[Sentio Processor (Recommended)](/guides/collect-data/the-processors/processor-engine):**
+   * The native, recommended approach using the Sentio TypeScript SDK.
+   * Offers maximum flexibility, performance, and access to all Sentio features (advanced handlers, state management, diverse outputs).
+   * Ideal for new projects or when requiring custom logic beyond standard subgraph capabilities.
+
+### **[Hosted Subgraph](/guides/collect-data/the-processors/hosted-subgraphs):**
+   * Supports deploying standard Subgraphs developed for The Graph ecosystem.
+   * Allows leveraging existing Subgraph codebases on Sentio infrastructure.
+   * Benefits from Sentio platform features like SQL API, dashboards, and versioning on top of the indexed data.
+   * Suitable for migrating existing Subgraphs or when a standard GraphQL API is the primary requirement.
+
+Choose the approach that best suits your project's needs and development resources. You can explore the specific details of each type in their respective sections.

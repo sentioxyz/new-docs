@@ -1,0 +1,19 @@
+---
+title: "SDK v2.39.6 & CLI  v2.18.7"
+---
+
+* **(breaking)** Finalized `store` API (read more at [doc](/guides/collect-data/data-outputs/entities)), it involve a lot of performance change and improved code generation, to upgrade, you need
+  * Upgrade `@sentio/sdk`to v2.39.6 `@sentio/cli` to v2.18.7.
+  * Add following config to your `tsconfig.json`
+    ```json JSON
+    "compilerOptions": {
+      ...
+      "experimentalDecorators": true,
+      "emitDecoratorMetadata": true
+    }
+    ```
+  * (optional) We add`store.listIterator` API now return an iterator, this is to support loop through big list. You could still use `store.list` if you the list is not too long. If you are using some RC version, `store.list` may return an iterator,  in this case you need to choose the final form of API.
+  * Re-upload any processor that use`store`API
+* **(breaking)** `getPriceBySymbol` API now returns `undefined` for unknown symbol instead of throw error.
+* (fixed) Fix CLI behavior on Windows
+* (improve) Graph CLI now could upload source mapping

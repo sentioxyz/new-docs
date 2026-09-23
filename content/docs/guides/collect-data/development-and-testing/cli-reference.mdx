@@ -1,0 +1,113 @@
+---
+title: "CLI Reference"
+description: "Complete reference for Sentio CLI commands including login, create, add, upload, gen, and build with all available options and examples."
+---
+
+Sentio provides a command line tool to easily create and upload processors for your project. To start using it, you need to have a [Node.js](https://nodejs.org/en/download/) environment. Then you can run
+
+```shell
+npx @sentio/cli@latest --help
+```
+
+to see all available commands.
+
+## sentio login
+
+Login to Sentio from your command line. You first need to create your API key.
+
+```shell
+npx @sentio/cli@latest login
+```
+
+## sentio create
+
+Create a sentio processor
+
+```shell
+npx @sentio/cli@latest create <project name>
+```
+
+By default it creates an EVM-based project. If you want to create a project for other chains, you can do
+
+```shell
+npx @sentio/cli@latest create -c <evm|aptos|solana|raw|fuel|sui|iota> <project name>
+```
+
+If you are working in a mono-repo setup with many processors in repo and have your root package.json control all versions, you need to do the following or delete the sentio dependencies in your child package.json manually.
+
+```shell
+npx @sentio/cli@latest create --subproject <project name>
+```
+
+## sentio add
+
+Inside project directory, add contract ABI to your project and generate bindings for a contract in Ethereum mainnet.
+
+```shell
+yarn sentio add <contract address>
+```
+
+To use a different network, try `--chain` flag as follows
+
+```shell
+yarn sentio add --chain <chain_id> <contract address>
+```
+
+By default, the ABI will be downloaded with its address as the name, which will lead the generated binding to use the address for the name as well. To override the name, use `-n <name>` or `--name <name>`, e.g.
+
+```shell
+yarn sentio add --name MyToken --chain <chain_id> <contract address>
+```
+
+## sentio upload
+
+Inside project directory, build and upload your processor to your project.
+
+```shell
+yarn sentio upload
+```
+
+It's also possible to hot-swap a running processor version with new logic, without re-indexing old data.
+
+```shell
+yarn sentio upload --continue-from=<old version>
+```
+
+### Multiple Worker 
+
+For processors with heavy computational workloads, you can enable multiple worker processes to run concurrently and improve performance:
+
+```shell
+yarn sentio upload --num-workers=<number>
+```
+
+The `--num-workers` option allows you to specify how many processor server instances should run concurrently. This is particularly beneficial for handlers that include:
+
+* Complex mathematical calculations
+* Heavy data transformations
+* Intensive loops or iterations
+* Large data processing operations
+
+**Example:**
+
+```shell
+yarn sentio upload --num-workers=4
+```
+
+> **Note:** This option is supported starting from SDK & CLI version 3.1. The optimal number of workers depends on your processor's computational requirements and available system resources. Start with 2-4 workers and adjust based on performance monitoring.
+
+## sentio gen
+
+Inside project directory, generate type bindings into `src/types` according to ABIs that are in the `abis` folder.
+
+```shell
+yarn sentio gen
+```
+
+## sentio build
+
+Inside project directory, generate code and then build the processor into `dist` folder.
+
+```shell
+yarn sentio build
+```

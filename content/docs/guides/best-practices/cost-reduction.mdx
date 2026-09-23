@@ -1,0 +1,31 @@
+---
+title: "Cost Reduction"
+description: "Strategies for optimizing processor costs."
+---
+
+
+Sentio's pricing may depend on factors like data points ingested, compute time, and data storage. Here are ways to optimize your processor costs:
+
+## 1. Prefer Metrics Over Logs/Entities (When Appropriate)
+
+*   **Metrics (Counters/Gauges):** Generally have the lowest unit cost for storage and querying, especially for aggregated numerical data.
+*   **Event Logs & Entities:** Offer more detail and flexibility but can incur higher costs due to storing more complex, often higher-volume data.
+*   **Recommendation:** Use Metrics for tracking trends, totals, and numerical values suitable for aggregation. Reserve Event Logs and Entities for detailed record-keeping, high-cardinality data (like individual addresses or hashes), or structured state tracking where simple aggregation isn't sufficient.
+
+## 2. Reduce Handler Execution Frequency
+
+*   **Interval Handlers:** The more frequently `onTimeInterval`, `onBlockInterval`, or `onVersionInterval` handlers run, the more compute resources they consume.
+    *   **Recommendation:** Increase the intervals (especially the `backfillInterval`) to the largest acceptable value for your use case. Do you really need to check that balance every minute, or would every 10 minutes or hour suffice?
+*   **Event Handlers:** While triggered by on-chain activity, you can reduce their effective execution frequency:
+    *   **Use Filters:** Apply specific event filters (`Processor.filters`) to `onEventXxx` handlers so they only execute for events matching precise criteria, rather than processing every single event of that type.
+
+## 3. Limit Historical Backfill with `startBlock`
+
+*   Processing a contract's entire history from genesis can be computationally expensive, especially for old and active contracts.
+*   **Recommendation:** If you only need recent data or data from a specific point onwards, specify a `startBlock` (or `startVersion`) in your `Processor.bind()` configuration. This significantly reduces the amount of historical data processed during the initial backfill.
+
+## 4. Avoid High Cardinality Labels in Metrics
+
+*   Using labels with a vast number of unique values (e.g., wallet addresses, transaction hashes) in Metrics can drastically increase the number of time series stored, leading to higher costs and potential performance issues or errors (limits are often around 10k unique series per metric).
+*   **Recommendation:** For high-cardinality identifiers, use Event Logs (adding the identifier as an attribute) or Entities (using the identifier as an entity ID or field) instead of metric labels.
+    *(See [Avoiding High Cardinality](/guides/best-practices/avoid-high-cardinality))* 

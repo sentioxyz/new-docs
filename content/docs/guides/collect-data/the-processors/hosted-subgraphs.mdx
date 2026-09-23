@@ -1,0 +1,97 @@
+---
+title: "🕸️ Hosted Subgraphs"
+description: "Learn about using The Graph Subgraphs within the Sentio platform."
+---
+
+While Sentio's native Processors (written in TypeScript using the Sentio SDK) offer the most flexibility and performance, Sentio also provides compatibility for **Hosted Subgraphs**, the standard developed by The Graph.
+
+This allows teams with existing Subgraphs to migrate them to Sentio's infrastructure relatively easily and benefit from some of Sentio's platform features.
+
+## What it is & When to Use
+
+* **Concept:** You deploy your standard Subgraph codebase (manifest `subgraph.yaml`, `schema.graphql`, AssemblyScript mappings) to Sentio instead of The Graph's hosted service.
+* **Compatibility:** Sentio aims to be compatible with standard Subgraph development practices.
+* **Benefits:**
+  * Leverage existing Subgraph codebases.
+  * Utilize Sentio's infrastructure.
+  * Gain access to Sentio features on top of the Subgraph data, such as:
+    * SQL API access (in addition to GraphQL).
+    * Sentio's dashboarding and visualization tools.
+    * Multi-versioning support (similar to Processors).
+* **When to Choose:** Primarily useful if you have a significant investment in an existing Subgraph and want to migrate infrastructure or utilize Sentio's analytics layer without rewriting the indexing logic immediately.
+* **Recommendation:** For new projects or for maximum performance and access to all Sentio features (like advanced handlers, direct access to `ctx` object features, more flexible data outputs), **Sentio Processors are generally recommended.**
+
+## Deployment
+
+### Create Project in Sentio
+
+When creating a project in the Sentio UI, choose "Subgraph" as the project type.
+
+![](/assets/da5e703ccc99d487ee2c20ba947d469609e2faa848cc345603aef66664c04e3d-image.png)
+
+### Use Sentio CLI for Subgraphs
+
+Sentio provides specific CLI commands for Subgraphs.
+
+* **Deploy:**
+  ```bash
+  npx @sentio/cli graph deploy --owner YOUR_PROJECT_OWNER --name YOUR_PROJECT_NAME
+  ```
+  Replace `YOUR_PROJECT_OWNER` (your username or team slug) and `YOUR_PROJECT_NAME` with the names defined in Sentio.
+* **Hot Swap:** Similar to processors, you can update a running Subgraph version:
+  ```bash
+  npx @sentio/cli graph deploy --owner OWNER --name NAME --continue-from=<old_version_id>
+  ```
+
+### Supported Networks
+
+* Generally supports the same EVM networks as Sentio Processors.
+* In your `subgraph.yaml` manifest, specify the network using the **Chain ID** (e.g., `network: '1'` for Ethereum Mainnet) for clarity, rather than potentially ambiguous slugs.
+* Support for custom or forked networks is possible by providing your own archive node RPC endpoint directly in the `network` field of the manifest.
+  ```yaml
+  # subgraph.yaml
+  dataSources:
+    - kind: ethereum/contract
+      name: MyContract
+      network: '1' # Use Chain ID for standard networks
+      # Or: network: 'http://my-custom-archive-node-rpc.com' # For custom nodes
+      source:
+        address: "0x..."
+        abi: MyContract
+        startBlock: 15000000
+      mapping:
+        kind: ethereum/events
+        apiVersion: 0.0.7
+        language: wasm/assemblyscript
+        entities:
+          - Transfer
+        abis:
+          - name: MyContract
+            file: ./abis/MyContract.json
+        eventHandlers:
+          - event: Transfer(address,address,uint256)
+            handler: handleTransfer
+        file: ./src/mapping.ts
+  ```
+
+### Recommended Versions
+
+```
+@graphprotocol/graph-cli: 0.68.5
+@graphprotocol/graph-ts: 0.32.0
+```
+
+## Accessing Data
+
+* **GraphQL API:** Sentio provides a standard GraphQL endpoint for your deployed Subgraph, just like The Graph's hosted service. The endpoint URL is usually shown in the CLI output during deployment and available in the Sentio UI (Data Studio).
+* **SQL API:** A key benefit of running Subgraphs on Sentio is the automatic provision of an SQL interface to query the entities defined in your Subgraph's `schema.graphql`.
+* **Sentio UI:** You can visualize the data indexed by your Subgraph using Sentio's dashboards and analytics tools.
+* **Data Source Page:** Monitor the indexing progress and status of your Subgraph on the Data Source page in Sentio.
+
+## Limitations
+
+* **Feature Lag:** May not support the absolute latest Subgraph features immediately upon their release by The Graph.
+* **Handler Types:** Currently, Sentio's Subgraph hosting might have limitations, such as potentially lacking support for trace-based handlers (`callHandlers`, `blockHandlers` with call filtering) compared to native Sentio Processors on chains where traces are available.
+* **Performance:** While Sentio provides robust infrastructure, native Sentio Processors are often more performant due to their direct integration and TypeScript/JavaScript runtime.
+
+In summary, Hosted Subgraphs on Sentio offer a valuable migration path and allow leveraging Sentio's platform features on existing codebases, but native Sentio Processors provide the most power and flexibility for new development.

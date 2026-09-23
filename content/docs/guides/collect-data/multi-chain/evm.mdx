@@ -1,0 +1,113 @@
+---
+title: "EVM Chains"
+description: "Details on processors and handlers for Ethereum Virtual Machine compatible chains. "
+---
+
+This covers Ethereum and other blockchains compatible with the Ethereum Virtual Machine (EVM), such as Polygon, Binance Smart Chain (BSC), Arbitrum, Optimism, Base, Avalanche, etc.
+
+## Core Concepts
+
+### Processors
+
+EVM integration primarily uses three types of processors:
+
+1. **Contract Processors (e.g.,`EthProcessor`, `PolygonProcessor`, etc.)**: Binds to a specific smart contract address. Use this to process logs (events), transaction calls, and traces related to that contract.
+   * **Typical Use Case:** Monitoring a specific dApp, token, or protocol.
+   * **Binding:** `Erc20Processor.bind({ address: '0x...', network: EthChainId.ETHEREUM, startBlock: 12345678 })` (Example uses a generated type-safe processor)
+   * Can be generated automatically using the Sentio CLI based on a contract ABI: `sentio gen <abi_file_or_etherscan_link>`
+
+2. **`GlobalProcessor`**: Processes data across the entire chain without binding to a specific address. Useful for chain-wide analytics or monitoring.
+   * **Typical Use Case:** Tracking overall gas usage, monitoring large transactions across the network, analyzing block data.
+   * **Binding:** `GlobalProcessor.bind({ network: EthChainId.POLYGON, startBlock: 30000000 })`
+
+3. **`AccountProcessor`**: Monitors activities related to a specific Externally Owned Account (EOA). Currently supports tracking incoming/outgoing native token transfers and logs emitted _by_ the account (useful for contract wallets like Gnosis Safe).
+   * **Typical Use Case:** Monitoring a specific user's wallet activity or a multi-sig wallet.
+   * **Binding:** `AccountProcessor.bind({ address: '0x...', network: EthChainId.BINANCE, startBlock: 20000000 })`
+
+### Handlers
+
+Handlers are defined within processors to react to on-chain activities:
+
+* **Contract & Account Processors:**
+  * `onEvent<TEvent extends TypedEvent>(handler(event, ctx), filter?)`: Triggered when a specific Solidity event matching the `filter` is emitted. The `event` object provides decoded event parameters (`event.args`). Filters are automatically generated for type-safe processors.
+  * `onTrace<TTrace extends TypedCallTrace>(handler(trace, ctx), filter?)`: Triggered for internal function calls (traces) matching the function `filter` (signature hash). Provides decoded input/output (`trace.args`, `trace.returnValue`). Filters are automatically generated for type-safe processors.
+  * `onBlockInterval(handler(block, ctx), interval?, backfillInterval?)`: Processes blocks based on block number intervals.
+  * `onTimeInterval(handler(block, ctx), intervalMinutes?, backfillIntervalMinutes?)`: Processes blocks based on time intervals.
+
+* **Global Processor:**
+  * `onTransaction(handler(tx, ctx), fetchConfig?)`: Triggered for every transaction on the network. Provides the raw `TransactionResponseParams`.
+  * `onTrace(handler(trace, ctx), signature | signatures[], fetchConfig?)`: Triggered for internal function calls matching specific signature hashes across any contract.
+  * `onBlockInterval(handler(block, ctx), interval?, backfillInterval?)`: Processes blocks based on block number intervals.
+  * `onTimeInterval(handler(block, ctx), intervalMinutes?, backfillIntervalMinutes?)`: Processes blocks based on time intervals.
+
+### Context (`ctx`)
+
+Handler functions receive a `Context` object (`ContractContext`, `AccountContext`, or `GlobalContext`) providing:
+
+* Chain information: `chainId`, `network` (deprecated).
+* Block details: `blockNumber`, `block`, `timestamp`.
+* Transaction details: `transactionHash`, `transaction`, `transactionReceipt`.
+* Source details: `address` (contract or account address), `log` (for `onEvent`), `trace` (for `onTrace`).
+* Helper methods: Access to bound contract views for reading state (`ctx.contract.balanceOf(...)`), ethers `provider` (`ctx.contract.provider`).
+* Standard SDK outputs: `ctx.meter.Counter('...')`, `ctx.eventLogger.emit('...')`, `ctx.exporter.eth_Block(...)`.
+
+### Fetch Configuration (`fetchConfig`)
+
+Handlers can include a `fetchConfig` parameter to specify what additional data should be fetched for the processed block, transaction, or event. The configuration is defined by the `EthFetchConfig` interface:
+
+```typescript
+interface EthFetchConfig {
+    block: boolean;          // Fetch full block data
+    trace: boolean;          // Fetch transaction traces
+    transaction: boolean;    // Fetch transaction details
+    transactionReceipt: boolean; // Fetch transaction receipt
+    transactionReceiptLogs: boolean; // Fetch logs from transaction receipt
+}
+```
+
+This allows access to richer data within the handler if needed. For example, to fetch traces for transactions that emit a specific event:
+
+```typescript
+processor.onEvent(..., { fetchConfig: { trace: true } }); // Fetch traces for transactions containing this event
+```
+
+## Getting Started Example (ERC20 Token)
+
+First, create an EVM processor project: `yarn sentio create -c evm <project-name>`. You can refer to the [CLI Reference](/guides/collect-data/development-and-testing/cli-reference) to learn details.
+
+```typescript
+import { ERC20Processor } from "@sentio/sdk/eth/builtin";
+import { EthChainId } from "@sentio/sdk/eth";
+import type { TransferEvent, ApprovalEvent, ERC20Context } from "@sentio/sdk/eth/builtin/erc20";
+
+const TOKEN_ADDRESS = "0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84"; // Lido Staked ETH (stETH)
+
+
+ERC20Processor.bind({ address: TOKEN_ADDRESS, network: EthChainId.ETHEREUM, startBlock: 11365000 })
+  .onEventTransfer(async (event: TransferEvent, ctx: ERC20Context) => {
+    ctx.meter.Counter("transfer_cnt").add(1, { token: "stETH" });
+    ctx.meter.Counter("transfer_volume").add(event.args.value, { token: "stETH" });
+    ctx.eventLogger.emit("Transfer", {
+      distinctId: event.args.from,
+      to: event.args.to,
+      value: event.args.value.scaleDown(18), // Scale down based on decimals
+      token: "stETH",
+    });
+  })
+  .onEventApproval(async (event: ApprovalEvent, ctx: ERC20Context) => {
+    ctx.meter.Counter("approval_cnt").add(1, { token: "stETH" });
+    ctx.eventLogger.emit("Approval", {
+      distinctId: event.args.owner,
+      spender: event.args.spender,
+      value: event.args.value.scaleDown(18),
+      token: "stETH",
+    });
+  })
+  .onBlockInterval(async (block, ctx) => {
+    const totalSupply = await ctx.contract.totalSupply();
+    ctx.meter.Gauge("total_supply").record(totalSupply.scaleDown(18), { token: "stETH" });
+  }, 1000); // Check every 1000 blocks
+
+```
+
+This documentation covers the fundamentals of the Ethereum/EVM module in the Sentio SDK. Consult the specific source files (`base-processor.ts`, `context.ts`, etc.) and generated contract types for more detailed API information.

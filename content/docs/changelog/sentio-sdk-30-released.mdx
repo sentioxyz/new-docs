@@ -1,0 +1,82 @@
+---
+title: "Sentio SDK 3.0 released"
+---
+
+<br />
+
+SDK 3.0 is a major release that offers major new features, improvement and  performance boosts.
+
+# Unified Data Types for Metrics
+
+Metric, event and entity are now under the same data storage (we previous use PromQL), that means:
+
+* **Feature**: Metrics now also support raw SQL query which provides user maximum flexibility for complex queries.
+
+  ![](/assets/changelog/d84bc1b6310e2154-image.png)
+
+* **Improvement**: Metrics aggregation query with `avg_over_time` and `rollup_sum` is now much faster.
+
+* **Breaking**:
+  * All metadata fields have the same naming convention, they are now all under `meta` prefix, e.g.
+    * Entity: `_genBlock_number` is now `meta.block_number`
+    * Event, metrics: `block_number` is now `meta.block_number`
+  * Cohort doesn't allow use "All Event" filter
+  * There is no builtin `event_name` field in event data structure
+
+# Enhanced Entity and SQL Features
+
+* **Feature**: [SQL based alerts](/guides/use-data/alerts#sql-based-alerts) is added, providing flexible way of define your alerts.
+
+  ![](/assets/changelog/cdbe79be3f2ae3fa-image.png)
+
+* **Feature**: flexible [aggregation on Entities](/guides/collect-data/data-outputs/entities#timeseries-and-aggregation) , e.g.  the following code will generate extra `AggA` entity every hour with `aggB` field that is max value of `propA+propB` during the hour, while you just  need to emit `EntityH`. This feature could support intensive workload that is slow to do computation during query time
+
+```graphql
+type EntityH @entity(timeseries: true) {
+    id: Int8!
+    timestamp: Timestamp!
+    propA: BigDecimal!
+    propB: BigDecimal!
+}
+
+type AggA @aggregation(intervals: ["hour"], source: "EntityH") {
+    id: Int8!
+    timestamp: Timestamp!
+    aggB: BigDecimal! @aggregate(fn: "max", arg: "propA+propB")
+}
+```
+
+# Indexing Rollback
+
+There are cases where previously mis-handled data leads to dirty or inconsistent results (for example, a bug that was triggered only during a certain time window).
+
+Starting from SDK 3.x, you can now view the full list of checkpoints maintained by the Sentio Processor and instruct the processor to [roll back](/guides/collect-data/the-monitoring#processor-rollback) to an earlier state. After the rollback, the processor will enter a paused state, allowing you to use [Hotswap](/guides/collect-data/the-monitoring#hotswap-in-version) to fix the indexing logic before resuming execution.
+
+![](/assets/changelog/801494ab7e372126-image.png)
+
+![](/assets/changelog/662a644925d361cb-image.png)
+
+# Performance Boost
+
+SDK 3.0 improve the performance by adopt streaming mode in all stages, which
+
+* Indexing speed improved 20% to 400% (we'll share benchmark in the future)
+* Significant reduce memory usage and prevent unintended OOM during heavy workload
+* Huge improvements in case that many templates (factory) are involved.
+
+# Get Started
+
+To begin using SDK 3.0 and benefits from all the new features and improvements, upload new processor with the following new dependencies
+
+```json
+  "dependencies": {
+    "@sentio/sdk": "^3.0.0"
+  },
+  "devDependencies": {
+    "@sentio/cli": "^3.0.0"
+  }
+```
+
+<br />
+
+<br />

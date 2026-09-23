@@ -1,0 +1,16 @@
+{
+  "title": "Sentio Debugger",
+  "pages": [
+    "debugger-overview",
+    "transaction-info",
+    "fund-tracing",
+    "trace-view",
+    "debugger",
+    "simulation",
+    "dynamic-logging",
+    "code-insight",
+    "build-mode",
+    "forks",
+    "rpc-nodes"
+  ]
+}

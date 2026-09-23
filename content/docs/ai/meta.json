@@ -1,0 +1,15 @@
+{
+  "title": "AI",
+  "description": "AI capabilities built into Sentio",
+  "root": true,
+  "pagesIndex": "index",
+  "pages": [
+    "features-overview",
+    "ai-skills",
+    "chat-interface",
+    "sql-generation",
+    "insights-analytics",
+    "processor-generation",
+    "processor-diagnostics"
+  ]
+}

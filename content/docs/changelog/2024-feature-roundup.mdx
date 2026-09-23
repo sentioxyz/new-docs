@@ -1,0 +1,72 @@
+---
+title: "2024 Feature Roundup"
+---
+
+What a year it’s been!
+
+From groundbreaking features to seamless updates, our product has leveled up like never before. Here’s what we accomplished this year:
+
+* **Dark Mode**🌙：Finally, a highly requested feature! Enjoy an optimized, eye-friendly experience with Dark Mode.
+
+  ![](/assets/changelog/93963e8029e50a26-image.png)
+
+* **[Chain Support](/guides/collect-data/supported-network)**: We expanded our network to support 60+ chains, including:
+  * EVM: added support for Swell, Zircuit, Sonic, Sonieum, Blast, and many more
+  * Fuel, Bitcoin, Starknet, Move chains
+  * [Bring Your Own RPC](/guides/collect-data/the-processors/hosted-subgraphs#network-supported) : Add indexer support for EVM-compatible chains with no upfront cost by using your own RPC.
+
+* **[Dynamic Point Tracking](https://www.sentio.xyz/solution/)** :
+  We streamlined point tracking across ecosystems, saving developers significant time and resources.
+
+  “We rebuilt a year’s worth of work in 2 months.” – A happy user.
+
+  ![](/assets/changelog/4851f4d5786c29ad-image.png)
+
+* **[Entity Store](/guides/collect-data/data-outputs/entities)**: Fast and persistent storage with structured data accessible through SQL and GraphQL APIs.
+
+* **[Subgraph](/guides/collect-data/the-processors/hosted-subgraphs)** : Experience the power of multi-version subgraphs with SQL, dashboards, and seamless integration.
+
+  ![](/assets/changelog/de42d3635d6b1b4e-image.png)
+
+* **[Hotswap](/guides/collect-data/the-processors/hosted-subgraphs#hot-swap)**: Allow users to swap processor code while keeping the previous data, especially useful for debugging and fix unexpected problems.
+  * Sentio Processor: `yarn sentio upload --continue-from=<old version>`
+  * Hosted Subgraph Processor: `npx @sentio/cli graph deploy --owner $PROJECT_OWNER --name $PROJECT_NAME --continue-from=<old version>`
+
+* **Import External Projects**: Run multiple processors simultaneously and unify collected data for a cohesive experience.
+
+  ![](/assets/changelog/fe568623233c37a2-image.png)
+
+* **SQL**: Enhanced SQL Editor with:
+  * Saved Queries
+  * Full Data Export
+  * Materialized Views
+  * Ready-to-use chain tables
+
+    ![](/assets/changelog/1f837f9d68c672ae-image.png)
+
+* **[Endpoint](/guides/use-data/endpoint)**: Turn SQL/Subgraph queries into dedicated API endpoints with parameter support for easier API management and detailed request logs.
+
+  ![](/assets/changelog/40586e61f8971c54-image.png)
+
+* **Debugger & Simulator**:
+  * New Chain Support: Added Sui/Aptos debugging capabilities.
+  * Dynamic Logging: Debug on-chain contracts effortlessly with dynamic logging. It allows developer debug any onchain contract as simple as adding`console.log("%d", localVar)`:
+
+    ![](/assets/changelog/1367cccc921674cf-image.png)
+
+* **[Web IDE (beta)](/guides/collect-data/development-and-testing/web-ide)**: An online coding environment for creating and managing processor source code, without any dependency setup hussles.
+
+  ![](/assets/changelog/ce199ef1a59477e0-image.png)
+
+* **Processor & SDK**:
+  * Added more native types for the ease of building on Sui/Aptos
+  * Improved the process management and monitoring
+
+    ![](/assets/changelog/74bea5588c794224-image.png)
+
+* **[Dash](https://dash.sentio.xyz/discover)** : The ultimate permissionless data platform:
+  * Flexible data schema.
+  * Best-in-class dashboards.
+  * Fast queries for intuitive or advanced custom use cases.
+
+* **[Third-party Integrations](/guides/integrations/overview)**: Remix, Chrome, Hardhat, VS Code

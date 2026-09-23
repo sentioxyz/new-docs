@@ -1,0 +1,105 @@
+---
+title: "Overview"
+description: "Introduction to Sentio's multi-chain support and links to specific chain details. "
+---
+
+Sentio is designed from the ground up to support multiple blockchain ecosystems within a single, unified framework. While the core concepts (Processor, Handlers, Context, Outputs) remain consistent, the Sentio SDK provides specific modules, processor types, and sometimes unique handlers tailored to the nuances of each supported chain family.
+
+## The Unified SDK Structure
+
+The Sentio SDK (`@sentio/sdk`) uses namespaces to organize chain-specific functionalities. You typically import the base SDK elements and then chain-specific modules as needed.
+
+```typescript
+// Core SDK elements (used across chains)
+import { Counter, Gauge, BigDecimal, LogLevel } from '@sentio/sdk'
+
+// EVM-specific imports
+import { EthChainId, GlobalProcessor } from '@sentio/sdk/eth'
+
+// Aptos-specific imports
+import { AptosResourcesProcessor } from '@sentio/sdk/aptos'
+
+// ... and so on for other chains
+```
+
+When binding a processor or using chain-specific utilities, you use the appropriate chain ID and processor class for that network.
+
+## Supported Chains
+
+The Sentio SDK supports indexing data from the following blockchains:
+
+### EVM-based Chains
+
+* [**Ethereum (ETH)**](/guides/collect-data/multi-chain/evm): Primary integration for Ethereum and EVM-compatible chains like Arbitrum, Optimism, Polygon, and Binance Smart Chain. Focuses on processing contract events, traces, and blocks.
+
+### Move-based Chains
+
+* [**Aptos**](/guides/collect-data/multi-chain/aptos): Support for the Aptos blockchain, including event processing, function calls, and resource tracking.
+* [**Sui**](/guides/collect-data/multi-chain/sui): Integration with Sui's object-centric data model, supporting transaction block processing, event handlers, and object state tracking.
+* [**IOTA**](/guides/collect-data/multi-chain/iota): Integration with IOTA's dual-layer architecture featuring Move-based L1 and EVM L2, optimized for real-world asset tokenization, digital identity, and enterprise use cases.
+
+### Other Smart Contract Platforms
+
+* [**Solana**](/guides/collect-data/multi-chain/solana): Support for Solana's instruction-based model, with facilities for decoding and processing program instructions.
+* [**Fuel**](/guides/collect-data/multi-chain/fuel): Support for Fuel Network's parallel transaction execution model and Sway smart contracts.
+
+### UTXO-based Chains
+
+* [**Bitcoin (BTC)**](/guides/collect-data/multi-chain/other-networks): Integration with the Bitcoin blockchain, providing transaction and block processing capabilities.
+
+## Common Concepts
+
+All chain integrations follow a similar pattern:
+
+1. **Processors**: Classes that bind to specific on-chain entities (contracts, accounts, programs) and register handlers.
+2. **Handlers**: Functions that process specific on-chain events or state changes.
+3. **Context**: Objects passed to handlers containing chain-specific information and SDK functionality.
+4. **Output Methods**: Standard interfaces for metrics, event logging, and data export.
+5. **Fetch/Filter Configuration**: Optional parameters to control what data is fetched for processing.
+
+## Getting Started
+
+For each chain, choose the appropriate processor type based on your indexing needs. Each blockchain module documentation includes:
+
+* Available processor types
+* Handler types specific to that blockchain
+* Context object properties and methods
+* Configuration options
+* Code examples
+
+## Code Generation
+
+Many chain integrations support automatic code generation to create type-safe processors:
+
+```bash
+# Generate Ethereum processor from ABI
+sentio gen ./path/to/abi.json eth
+
+# Generate Solana processor from Anchor IDL
+sentio gen --idl ./path/to/idl.json solana
+
+# Generate Aptos processor from Move modules
+sentio gen 0x1::coin aptos
+```
+
+This creates strongly-typed processors with chain-specific handlers, making development more robust.
+
+## Unified Output System
+
+Regardless of which blockchain you're indexing, Sentio SDK provides a consistent set of outputs:
+
+* **Metrics**: Counters, gauges, and histograms for quantitative analysis
+* **Event Logs**: Structured events for user sessions and activity tracking
+* **Exporters**: Chain-specific data exporters for deeper analytics
+
+These outputs feed into Sentio's dashboard, alerting, and analytics systems for a complete data pipeline.
+
+Refer to each blockchain's specific documentation for detailed information about its integration.
+
+## Cross-Chain Processors
+
+For analyzing interactions *between* different chains (e.g., bridges), Sentio offers specialized `CrossChainProcessor` capabilities. Refer to the [🧠 Processors](/guides/collect-data/the-processors/overview) section for more details.
+
+## Network List & Status
+
+For the most up-to-date list of supported networks, their Chain IDs, slugs, and feature availability (Traces, Archive Nodes, Debugger), refer to the official Sentio documentation or the [Sentio Status Page](https://www.sentio.xyz/status/index.html).

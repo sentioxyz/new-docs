@@ -1,0 +1,219 @@
+---
+title: "⚡ Sentio Processor"
+description: "Dive deeper into how Sentio Processors are configured, run, and managed."
+---
+
+The Sentio Processor is robust engine designed for efficient and reliable blockchain data processing. Let's explore its key aspects.
+
+## Start
+
+The `Processor.bind()` method is the entry point for configuring *which* contract(s) and chain(s) your processor logic will apply to. It links your trigger functions (like `onEventTransfer`) to specific on-chain sources.
+
+```typescript
+// Example using a built-in ERC20 Processor
+import { ERC20Processor } from '@sentio/sdk/eth/builtin/erc20'
+import { EthChainId } from '@sentio/sdk/eth'
+
+ERC20Processor.bind({
+  // Required fields
+  address: '0xSpecificTokenAddress', // The contract address to monitor
+  network: EthChainId.ETHEREUM,      // The blockchain network ID (e.g., 1 for Ethereum Mainnet)
+                                   // Can often be omitted for Ethereum Mainnet
+  // Optional fields
+  startBlock: 15000000,            // Start processing from this block number (saves backfill time)
+  endBlock: 16000000,              // Stop processing after this block number (for specific ranges)
+  // Advanced performance tuning (rarely needed)
+  // batchSize: 100,               // How many blocks to process in one internal batch
+  // maxItemsPerBatch: 50          // Max items (e.g., events) within a batch
+})
+.onEventTransfer( async (event, ctx) => { /*event  handler logic */ } )
+// ... other triggers and handlers
+```
+
+**Binding configs:**
+
+* **`address`(string):** The primary contract address your processor instance will monitor.
+* **`network`(string | number):** The identifier for the blockchain. You can use predefined enums (like `EthChainId.ETHEREUM`, `AptosChainId.MAINNET`, `SuiChainId.SUI_MAINNET`) or the chain ID number (e.g., `1`, `56`, `137`).
+* **`startBlock`/`startVersion` (number | bigint, optional):** Tells Sentio to *only* start processing data from this block (or version for chains like Aptos/Sui) onwards. Crucial for reducing historical backfill time if you don't need the full history.
+* **`endBlock`/`endVersion` (number | bigint, optional):** Tells Sentio to stop processing after this block/version. Useful for analyzing specific historical periods.
+
+## Processor Lifecycle & Execution
+
+Once you upload your processor using `sentio upload`, Sentio's backend takes over:
+
+1. **Deployment:** Your code is deployed to Sentio's infrastructure.
+2. **Backfilling:** If no `startBlock` (or a very early one) is specified, Sentio starts processing historical data for your bound contract(s) from the specified block (or genesis if unspecified) up to the current chain head. This can take time depending on the chain history and processor complexity.
+3. **Real-time Processing:** After backfilling is complete, the processor monitors the tip of the blockchain, processing new blocks and events as they occur, usually within seconds of finality.
+4. **Reorg Handling:** Sentio automatically handles blockchain reorganizations (reorgs). If a block your processor handled is orphaned, Sentio will automatically roll back the data generated from that block and process the new canonical blocks, ensuring data consistency.
+5. **Execution Order:**
+   * By default, handlers for different blocks may run in parallel for performance.
+   * The data within a block is processed **sequentially**.
+   * Event and Function handlers are executed ordered by transaction index.
+   * Interval handlers (`onBlockInterval`, `onTimeInterval`) usually run at the end of their respective block/interval. For multiple interval handlers at the same block, the handlers are executed in definition order.
+   * Within the same transaction:
+     * Function handlers are executed before Event handlers.
+     * Event handlers are executed by log index.
+   * You can enforce fully sequential execution across blocks if needed, but this impacts performance.
+     ```typescript
+     import { GLOBAL_CONFIG } from "@sentio/runtime";
+
+     GLOBAL_CONFIG.execution = {
+       sequential: true,
+     };
+     ```
+
+## Processor State
+
+**Important:** Sentio processors are designed to be **stateless** between invocations. This means:
+
+* **Do NOT rely on global variables** to maintain state across different blocks or events. Your processor might be restarted or run in parallel instances.
+* If you need to store state (e.g., track user balances, remember seen transactions), use Sentio's **Entity Store** (`ctx.store`). This provides persistent storage that is correctly handled during backfilling and reorgs.
+
+```typescript
+// Bad: Relying on global state (might be reset or inconsistent)
+let userBalances = {};
+Processor.bind({...})
+  .onEventTransfer((event, ctx) => {
+    userBalances[event.args.from] -= event.args.value;
+    userBalances[event.args.to] += event.args.value;
+  });
+
+// Good: Using the Entity Store for persistent state
+import { Account } from './schema/schema' // Assuming Account entity is defined
+Processor.bind({...})
+  .onEventTransfer(async (event, ctx) => {
+    let fromAccount = await ctx.store.get(Account, event.args.from) || new Account({id: event.args.from, balance: 0n});
+    let toAccount = await ctx.store.get(Account, event.args.to) || new Account({id: event.args.to, balance: 0n});
+    
+    fromAccount.balance -= event.args.value;
+    toAccount.balance += event.args.value;
+    
+    await ctx.store.upsert([fromAccount, toAccount]);
+  });
+```
+
+## Processor Types
+
+Sentio offers a variety of processor classes to help you easily track and transform on-chain data based on your specific needs.
+
+### **Built-in Processors:** The SDK includes pre-built, optimized processors for common standards and protocols:
+   * EVM: `ERC20Processor`, `ERC721Processor`,  `GlobalProcessor`, etc.
+   * Sui: `SuiObjectProcessor`, `SuiObjectTypeProcessor`,`SuiWrappedObjectProcessor`, `SuiGlobalProcessor`.
+   * Aptos: `AptosEventProcessor`, `AptosResourceProcessor`.
+   * (and others for Solana, Fuel, etc.)\
+     Use these whenever possible as they are convenient and often optimized.
+
+### **Custom Processors (Generated from ABI):** For your unique contracts, you provide the contract's ABI (Application Binary Interface).
+   * Add the ABI file (usually JSON) to the `abis/<chain_type>/` directory (e.g., `abis/eth/MyContract.json`).
+   * Or use `sentio add <address> --chain <chain_id>` to fetch it automatically (if available on explorers like Etherscan).
+   * Run `sentio build` or `sentio gen`.
+   * Sentio automatically generates a type-safe TypeScript processor class (e.g., `MyContractProcessor`) in `src/types/` with methods for all events and functions defined in the ABI (e.g., `.onEventMyCustomEvent(...)`, `.onCallMyCustomFunction(...)`).\
+     This gives you type safety and auto-completion in your IDE.
+
+```typescript
+// Using a built-in processor
+import { ERC20Processor } from '@sentio/sdk/eth/builtin/erc20';
+ERC20Processor.bind({ address: '...' }).onEventTransfer(...);
+
+// Using a custom processor generated from MyContract.json ABI
+import { MyContractProcessor } from './types/eth/mycontract.js'; // Path to generated file
+MyContractProcessor.bind({ address: '...' }).onEventMyCustomEvent(...);
+```
+
+<br />
+
+## Handle Proxy Contracts
+
+Proxy contracts are a common pattern in EVM chains, allowing smart contract logic to be upgraded without changing the contract address users interact with. Sentio processors can handle proxies effectively with the correct setup.
+
+When indexing proxy contracts, you shall use **ABI of the underlying\_implementation\_ contract**, and **bind the proxy contract address**.
+
+![](/assets/proxy.gif)
+
+<br />
+
+## Handle Factory Contracts
+
+**Use Case:** Monitoring contracts that are created dynamically by a factory contract (e.g., new liquidity pools created by a DEX factory).
+
+**Concept:** Instead of binding a processor directly to a contract address that might not exist yet, you use a `ProcessorTemplate`. This template defines the handlers (like `onEventSwap`), but isn't initially bound to any address.
+
+**Workflow:**
+
+1. **Define the Template:** Create an instance of the appropriate `ProcessorTemplate` (e.g., `UniswapV2PairProcessorTemplate` or a template generated from your pool's ABI) and attach your desired event handlers to it. This template definition must usually be at the top level of your `processor.ts`.
+2. **Monitor the Factory:** Bind a standard processor (e.g., `UniswapV2FactoryProcessor` generated from the factory ABI) to the factory contract's address.
+3. **Handle Creation Events:** In the factory processor, implement a handler for the event that signals the creation of a new contract (e.g., `onEventPairCreated`).
+4. **Bind the Template:** Inside the factory's creation event handler, use the `template.bind()` method, passing the address of the newly created contract (obtained from the event arguments) and optionally the `startBlock` (usually `ctx.blockNumber`). This dynamically starts monitoring the new contract using the handlers defined in the template.
+
+**Example (Simplified DEX Factory):**
+
+```typescript
+import { EthChainId } from '@sentio/sdk/eth'
+// Assuming these types are generated from ABIs
+// yarn sentio -c 1 add 0xB4e16d0168e52d35CaCD2c6185b44281Ec28C9Dc
+import { UniswapV2PairProcessorTemplate } from './types/eth/uniswapv2pair.js'
+// yarn sentio -c 1 add 0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f
+import { UniswapV2FactoryProcessor } from './types/eth/uniswapv2factory.js'
+
+
+// --- Define the WETH address (Ethereum Mainnet) ---
+const WETH_ADDRESS = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2".toLowerCase();
+
+// 1. Define the Template for Pool contracts
+const pairTemplate = new UniswapV2PairProcessorTemplate()
+    .onEventSwap(async (event, ctx) => {
+      // Logic to handle swaps for ANY pool bound by this template
+      const volume = BigInt(event.args.amount0Out) + BigInt(event.args.amount1Out)
+      ctx.meter.Counter('swap_volume_usd').add(volume, { pair_address: ctx.address });
+      console.log(`Swap in pair ${ctx.address}, Volume: ${volume}`)
+    })
+    .onEventMint(async (event, ctx) => {
+      // Handle liquidity addition
+      ctx.meter.Counter('liquidity_mints').add(1, { pair_address: ctx.address });
+      console.log(`Mint in pair ${ctx.address}`)
+    });
+
+// 2. Monitor the Factory contract
+UniswapV2FactoryProcessor.bind({
+  address: '0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f',
+  network: EthChainId.ETHEREUM
+})
+// 3. Handle the PoolCreated event
+.onEventPairCreated(async (event, ctx) => {
+  const newPairAddress = event.args.pair;
+  const token0 = event.args.token0.toLowerCase();
+  const token1 = event.args.token1.toLowerCase();
+  console.log(`New pair created: ${newPairAddress} (Token0: ${token0}, Token1: ${token1}) at block ${ctx.blockNumber}`);
+
+  // Check if the newly created pair involves WETH
+  if (token0 === WETH_ADDRESS || token1 === WETH_ADDRESS) {
+    console.log(`Pair ${newPairAddress} involves WETH. Binding template...`);
+    // 4. If it involves WETH, dynamically bind the pairTemplate to this new address
+    pairTemplate.bind({
+      address: newPairAddress,
+      startBlock: ctx.blockNumber // Start processing from the current block
+    }, ctx);
+
+    // Log an event indicating we started tracking this WETH-related pair
+    ctx.eventLogger.emit("WethPairContractTracked", {
+        distinctId: newPairAddress,
+        pair: newPairAddress,
+        token0: event.args.token0, // Log original case addresses
+        token1: event.args.token1
+    });
+  } else {
+     console.log(`Pair ${newPairAddress} does not involve WETH. Skipping binding.`);
+  }
+});
+
+```
+
+**Considerations:**
+
+* Currently primarily supported on EVM chains.
+* Templates must generally be defined at the top level.
+* Be mindful of creating excessive dynamic processors if the factory creates vast numbers of contracts.
+
+## Handle Multi-Chain Processors
+
+Sentio allows users to write monitoring code in the same processor for different chains (Yes, even for **EVM** and **non-EVM** chains!). This is particularly convenient for monitoring multi-chain applications. See this [example](https://github.com/sentioxyz/sentio-processors/tree/main/projects/pyth)  for implementation details.

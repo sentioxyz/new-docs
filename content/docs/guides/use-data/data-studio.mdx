@@ -1,0 +1,241 @@
+---
+title: "📊 Data Studio"
+---
+
+Sentio Data Studio is a powerful analytics platform designed for users who need deeper insights and more flexible data analysis capabilities than standard dashboards offer. It provides a comprehensive environment for transforming raw blockchain data into meaningful insights, visualizations, and APIs—all within your browser.
+
+## Key components of the Data Studio interface
+
+
+  <thead>
+    <tr>
+      <th style={{ textAlign: "left" }}>
+        #
+      </th>
+
+      <th style={{ textAlign: "left" }}>
+        Description
+      </th>
+
+      <th style={{ textAlign: "left" }}>
+        Functionality
+      </th>
+    </tr>
+  </thead>
+
+  <tbody>
+    <tr>
+      <td style={{ textAlign: "left" }}>
+        ①
+      </td>
+
+      <td style={{ textAlign: "left" }}>
+        **Schema Panel**
+      </td>
+
+      <td style={{ textAlign: "left" }}>
+        Browse available tables, saved queries, and views.
+      </td>
+    </tr>
+
+    <tr>
+      <td style={{ textAlign: "left" }}>
+        ②
+      </td>
+
+      <td style={{ textAlign: "left" }}>
+        **SQL Editor**
+      </td>
+
+      <td style={{ textAlign: "left" }}>
+        Supports autocomplete, multiple tabs, and keyboard shortcuts (⌘/Ctrl + Enter to run).
+      </td>
+    </tr>
+
+    <tr>
+      <td style={{ textAlign: "left" }}>
+        ③
+      </td>
+
+      <td style={{ textAlign: "left" }}>
+        **Run Controls**
+      </td>
+
+      <td style={{ textAlign: "left" }}>
+        Configure row limits and view execution time metrics.
+      </td>
+    </tr>
+
+    <tr>
+      <td style={{ textAlign: "left" }}>
+        ④
+      </td>
+
+      <td style={{ textAlign: "left" }}>
+        **Results Pane**
+      </td>
+
+      <td style={{ textAlign: "left" }}>
+        Toggle between Table, Line, Bar, Area, Scatter, or Pie visualizations.
+      </td>
+    </tr>
+
+    <tr>
+      <td style={{ textAlign: "left" }}>
+        ⑤
+      </td>
+
+      <td style={{ textAlign: "left" }}>
+        **Action Buttons**
+      </td>
+
+      <td style={{ textAlign: "left" }}>
+        Save Query, Save View (Pro), Add to Dashboard, Create Endpoint.
+      </td>
+    </tr>
+
+    <tr>
+      <td style={{ textAlign: "left" }}>
+        ⑥
+      </td>
+
+      <td style={{ textAlign: "left" }}>
+        **AI Assistant**
+      </td>
+
+      <td style={{ textAlign: "left" }}>
+        Seamlessly integrated, AI assistance extends beyond the dedicated 'Ask AI' panel, offering contextual suggestions and actions directly inline when you select text within the SQL editor.
+      </td>
+    </tr>
+  </tbody>
+
+
+![](/assets/59049744e69a04623a6ec3f8d2a10e3a25a9c7021e12161e858bd30f2ff93a69-image.png)
+
+<br />
+
+## 1. Writing and Executing Your First Query
+
+The core of Data Studio is its powerful SQL editor.
+
+* **Explore Data:** Before writing your query, you can preview table schemas and sample data directly in the **Schema Panel** (① in the image below) on the left. This helps you understand the available fields and their content. Click on table or column names to auto-insert them into your query.
+* **Write Your SQL:** Use the **SQL Editor** (②) to compose your queries. It features syntax highlighting and autocomplete to streamline the process.
+* **AI Assistance:** Leverage the built-in **AI Assistant** (⑥) to:
+
+  * Generate SQL queries from natural language descriptions.
+  * Explain complex SQL logic.
+  * Optimize query performance by identifying bottlenecks or suggesting improvements.
+
+  ![Daily number of transfers over the last 30 days](/assets/f9ffd2d9d553e02b6da419451b898843608b574af81a48036b77ac9ec1d0a9f1-u1-ai_gen.gif)
+
+  ![Recent transfers for a specific ERC20 token](/assets/116321bc510a6fc44f17697e7a62db574016f6a5195efb302bdd4a5e301700ac-u1-ai_gen_upgrade.gif)
+
+<br />
+
+## 2. Running Queries and Visualizing Results
+
+As you refine your SQL, you can instantly see the impact.
+
+```sql
+SELECT
+    date_trunc('day', timestamp)                 AS day,
+    SUM(CAST(amount AS DECIMAL(38,18)))          AS total_volume,
+    COUNT(DISTINCT from)                         AS unique_senders,
+    COUNT(DISTINCT to)                           AS unique_receivers,
+    COUNT(*)                                     AS transfers
+FROM "Transfer"
+GROUP BY
+    date_trunc('day', timestamp)
+ORDER BY
+    day DESC;
+```
+
+<Callout icon="💡" theme="default">
+  ### Tip: Click on column names like `timestamp`, `amount`, `from`, and `to` in the Schema panel to auto-insert them into your query.
+</Callout>
+
+* Execute your query by clicking the **Run** button or pressing ⌘/Ctrl + Enter
+* Review the tabular results to verify data accuracy
+* If the results aren't quite right, simply go back to the SQL editor pane above, modify your query, and click Run again. Repeat this cycle until the preview shows the exact data you need for your analysis.
+
+![](/assets/c453e0817d603b1e7a236a33edb9023d99fb08b1ff8b052d99f3bedfd25b4b7c-u2-view_result.gif)
+
+<br />
+
+## 3. Visualizing Query Results
+
+* **Switch to your preferred visualization type (Line, Bar, etc.) to create charts.**
+
+* **Hover over data points to see detailed values without additional coding.**
+
+* **Directly integrate your query's visualization into a Sentio Dashboard for ongoing monitoring and analysis alongside other metrics.**
+
+![](/assets/13e6a1e721ed96fda78a77c8b86f9691c2fd78b4a0c404f0c1a9ac41b3a468f8-2-switch_visualization.gif)
+
+## 4. Using Queries as Endpoints/APIs
+
+Once your SQL query is finalized, Data Studio offers several ways to share or reuse your analysis (using the **Action Buttons** ⑤):
+
+* **Create Endpoint:** Transform your query into a live API endpoint. This generates a REST API URL that returns paginated JSON results, perfect for powering external applications, bots, or custom frontends. You can configure endpoint slugs, permissions (Public/Private), and default parameter values if your query uses variables (e.g., `{{address}}`).
+
+![](/assets/93ec93e25d6af5a683714b53c4795f91f774e1de784e3385876954fef78b665a-4-add_endpoint-2.gif)
+
+<br />
+
+* **Use SQL API:** Unlike endpoints, using the SQL API requires passing SQL parameters with each request. Based on the parameters provided, you can dynamically query and retrieve the data you need in real-time.
+
+![](/assets/0ed01d55c785a9784b6e4f7ae5730bf6a242e5e11adf49cde9508db218e964cc-5-add_api.gif)
+
+<br />
+
+## 5. Leveraging Advanced Features
+
+* **Save Query (Free & Pro):** Stores the SQL definition for personal use or work-in-progress.
+* **Save View (Pro):** Creates a materialized view from your SQL, storing pre-calculated results for faster future access. For a more detailed guide, please refer to [⚡ Materialized Views](/guides/use-data/materialized-views).
+
+![](/assets/5cedbc9d18c7a2dfa5d92e4942529e7a9e1d92e958ef64c57fac0bfefac49586-6-save_view-2.gif)
+
+* **Export Results:** Download the raw data from your query results table in formats like CSV for use in other tools or further offline analysis. (Note: Look for an "Export" button in the Results Pane).
+
+![](/assets/baeb9adda999d71d9ab27db9ccf436002ed5590d8c43bcf920cc448221d7d72f-7-export-2.gif)
+
+* **Types of datasets:** Beyond analyzing data from your own processed events and states, Sentio curates a series of datasets within the **Schema Panel** (①).
+
+  * **Curated Data:** Access a growing library of valuable, pre-processed datasets covering various blockchain activities and protocols (e.g., decoded DEX trades, NFT metadata). These datasets, cleaned and maintained by the Sentio team, are listed under their respective chain tables in the Schema Panel.
+  * **Chain Data:** Access fundamental blockchain data like transactions and blocks. This raw data is also listed under the respective chain tables in the Schema Panel.
+
+These official and shared data sources are continuously updated and expanded. Keep an eye on the Schema Panel for new datasets to enrich your analysis! We also welcome you to share your valuable data.
+
+## 6. Optimizing Performance with Execute Engine Size
+
+Sentio's Data Studio gives you direct control over the computational resources allocated to your queries by allowing you to select an Execute Engine Size. This is especially useful for complex or long-running analyses where higher performance can significantly reduce execution time.
+
+To select an engine size, simply click the dropdown arrow next to the `Run` button before executing your query. The currently selected tier is displayed on the button itself.
+
+![](/assets/fa85dc5d6eabdf171c20c6c3139065ff693100c1a1d0fba81cf271c96c379440-engine-update.gif)
+
+<br />
+
+You can choose from the following performance tiers:
+
+* **Small:** Basic performance and minimal resources. This is the default setting and is ideal for simple, exploratory queries.
+* **Medium:** Balanced performance and resource limits. A good choice for moderately complex queries that require a boost in speed.
+* **Large:** High performance with increased speed and resources. Recommended for demanding analytical queries on large datasets.
+* **Ultra:** Top-tier performance with maximum speed and resource allocation. Designed for the most computationally intensive queries.
+
+### 💰 Pricing and Consumption
+
+| Engine Size | Description                                            | Cost per Query (Sentio Units) |
+| :---------- | :----------------------------------------------------- | ----------------------------: |
+| **Small**   | Basic performance and minimal resources.               |                         1,000 |
+| **Medium**  | Balanced performance and resource limits.              |                         1,250 |
+| **Large**   | High performance with increased speed and resources.   |                         1,500 |
+| **Ultra**   | Top-tier performance with maximum resource allocation. |                         2,000 |
+
+> ℹ️ **Important Notes on Billing and Free Tier Usage**
+>
+> **Free Tier Allowance**: Our Free Tier includes a monthly allowance of 200,000,000 Sentio Units. This allowance can be used to run queries on the Small engine size.
+>
+> **Upgrading Engine Size**: To use the Medium, Large, or Ultra engines, you will need to be on a paid plan.
+>
+> **UI-Initiated Queries**: It's important to note that queries automatically initiated by the Sentio UI (such as dashboard panel refreshes) do not currently consume any Sentio Units. This policy is subject to change.

@@ -1,0 +1,159 @@
+---
+title: "🚀 Getting Started"
+---
+
+# Your First Processor: A Step-by-Step Guide
+
+Let's build a simple Sentio Processor to demonstrate the basic workflow. Our goal is to monitor an ERC20 token contract and count the number of transfers and the total volume transferred.
+
+## Prerequisites
+
+* **Node.js:** Ensure you have Node.js (version 22 ) installed. You can download it from [nodejs.org](https://nodejs.org/).
+* **Sentio Account:** You need a Sentio account. Sign up at [app.sentio.xyz](https://app.sentio.xyz).
+
+## Step 1: Setup & Login
+
+1. **Open your terminal.**
+2. **Login to Sentio CLI:**\
+   We support standard Google/GitHub login. To login from the command line, you can do:
+   ```bash
+   npx @sentio/cli@latest login
+   ```
+
+## Step 2: Create a Project
+
+1. **Use the CLI to create a new project:**\
+   We'll name it `erc20-counter`. This command sets up a basic project structure for EVM chains.
+   ```bash
+   npx @sentio/cli@latest create erc20-counter
+   ```
+2. **Navigate into the project directory:**
+   ```bash
+   cd erc20-counter
+   ```
+
+## Step 3: Project Structure Overview
+
+Inside `erc20-counter`, you'll see:
+
+* `package.json`: Node.js project manifest, including Sentio SDK dependencies.
+* `sentio.yaml`: Sentio project configuration (we'll modify this).
+* `tsconfig.json`: TypeScript configuration.
+* `src/`: Contains your processor source code.
+  * `processor.ts`: The main file where you'll write your processor logic.
+* `abis/`: Directory to store contract ABIs (if not using built-ins).
+
+## Step 4: Define the Task & Configure the Processor
+
+Our goal is to count transfers for a specific ERC20 token. Let's use Wrapped Ether (WETH) on Ethereum as an example.
+
+1. **Edit`sentio.yaml`:**\
+   This file tells Sentio basic information about your project.
+   ```yaml
+   project: erc20-counter
+   # Contract information isn't strictly needed here if using built-in processors with bind()
+   # but it's good practice to define contracts you interact with.
+   contracts:
+     - chain: 1 # Use 'eth_mainnet' or '1' for Ethereum Mainnet
+       address: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2" # WETH Address
+       name: WETH # Optional name
+   ```
+   *(Note: Using`bind` in `processor.ts` is often sufficient, `sentio.yaml` is more for ABI management and project settings)*
+
+## Step 5: Write the Processor Code
+
+Open `src/processor.ts` and replace its contents with the following:
+
+```typescript
+import { Counter, Gauge } from '@sentio/sdk'
+import { ERC20Processor, ERC20Context, TransferEvent } from '@sentio/sdk/eth/builtin/erc20'
+import { EthChainId } from '@sentio/sdk/eth'
+
+// Define the contract address and network
+const WETH_ADDRESS = '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2'
+const NETWORK = EthChainId.ETHEREUM // Or use '1'
+
+// Define metrics
+// 'transfer_cnt' will count the number of transfer events
+const transferCount = Counter.register('transfer_cnt', {
+  description: 'Counts the number of Transfer events',
+})
+
+// 'transfer_volume' will sum the value of tokens transferred
+const transferVolume = Counter.register('transfer_volume', {
+  description: 'Total volume of tokens transferred',
+  unit: 'weth' // Optional unit
+})
+
+// Create and bind the ERC20 Processor
+ERC20Processor.bind({ 
+  address: WETH_ADDRESS, 
+  network: NETWORK,
+  // Optional: Specify a start block if you don't need full history
+  // startBlock: 18000000 
+})
+.onEventTransfer(async (event: TransferEvent, ctx: ERC20Context) => {
+  // This code runs every time a Transfer event occurs for WETH
+  
+  // Increment the transfer count metric by 1
+  transferCount.add(ctx, 1)
+  
+  // Get the transfer value (it's a BigInt)
+  const value = event.args.value
+  
+  // Add the transfer value to the volume counter
+  // We use scaleDown(18) because WETH has 18 decimals
+  transferVolume.add(ctx, value.scaleDown(18))
+  
+  // Optionally, log the event details (useful for debugging)
+  ctx.eventLogger.emit('TransferProcessed', {
+    distinctId: event.args.to, // Associate log with recipient
+    from: event.args.from,
+    to: event.args.to,
+    value: value.scaleDown(18).toString(), // Log the scaled value
+    message: `Processed WETH transfer from ${event.args.from} to ${event.args.to}`
+  })
+})
+
+console.log('ERC20 Counter Processor started for WETH')
+```
+
+**Explanation:**
+
+1. We import necessary modules from the Sentio SDK.
+2. We define constants for the contract address and network.
+3. We use `Counter.register` to define our metrics (`transfer_count`, `transfer_volume`).
+4. We use `ERC20Processor.bind()` to tell Sentio which contract and network to monitor.
+5. We attach a handler function using `.onEventTransfer()`. This function will be executed for every `Transfer` event emitted by the WETH contract.
+6. Inside the handler:
+   * `event`: Contains decoded data from the blockchain event (like `from`, `to`, `value`).
+   * `ctx`: The context object, used to interact with Sentio (emit metrics, logs).
+   * We increment `transferCount`.
+   * We add the scaled `value` to `transferVolume`.
+   * We use `ctx.eventLogger.emit` to create a structured log entry.
+
+## Step 6: Build and Upload
+
+1. **Build the processor:** This compiles your TypeScript code into JavaScript.
+   ```bash
+   yarn sentio build 
+   ```
+2. **Upload the processor to Sentio:**
+   ```bash
+   yarn sentio upload
+   ```
+   The CLI will show the upload progress and confirm success.
+
+## Step 7: See it Run
+
+1. **Go to the Sentio App:** Navigate to your project (`erc20-counter`).
+2. **Data Source Page:** Click on "Data Sources". You should see your processor listed.
+   * Initially, it might show as "STARTING" or "BOOTSTRAPPING".
+   * Then, it will likely show "BACKFILLING" as Sentio processes historical data (this can take time depending on the contract's history and your `startBlock`).
+   * Eventually, it will show as "RUNNING", processing new blocks in real-time.
+   * You can view console logs (like our `console.log` message) and any errors here.
+3. **Metrics:** Once data starts processing, go to the "Analytics" or "Metrics" section.
+   * You should be able to find and chart your `transfer_cnt` and `transfer_volume` metrics.
+4. **Event Logs:** Check the "Logs" or "Events" section to see the `TransferProcessed` logs you emitted.
+
+**Congratulations!** You've built and deployed your first Sentio Processor.

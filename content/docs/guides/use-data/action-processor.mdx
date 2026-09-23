@@ -1,0 +1,89 @@
+---
+title: "🎬 Action Processor"
+---
+
+
+Action Processor is a powerful tool to let Sentio users write custom logic to process data. It is a serverless function that can be triggered by calling Sentio endpoints.
+
+## How to create an Action Processor
+To create an Action Processor, you can simply run the following command to create a Sentio processor project.
+
+```bash
+npx @sentio/cli@latest create `<project name>`
+```
+
+The command will generate a template project, then open the project in your favorite code editor. Edit the `sentio.yaml` file, change the `type` to `action`.
+
+```yaml
+project: your-project-name
+host: https://app.sentio.xyz
+type: action
+```
+
+If you don't need other functions provided by `@sentio/sdk`, you can also edit the `package.json` file, change the `@sentio/sdk` to `@sentio/action` in the dependencies. This reduces the size of the dependency package.
+
+```json
+"dependencies": {
+  "@sentio/action": "<the same as the sdk version>"
+}
+```
+
+## How to write an Action Processor
+
+Clean the `src/processor.ts` file and write your custom logic. Here is an example of a simple Action Processor that logs the data.
+
+```typescript
+import { ActionProcessor, ActionRequest } from '@sentio/action'
+
+ActionProcessor.bind()
+  .onGet('/hello/:name', async (request: ActionRequest, context: any) => {
+    const { name } = request.params
+    return `Hello, ${name}!`
+  })
+   
+```
+
+Other than the `onGet` method, you can also use `onPost`, `onPut`, `onDelete` to handle different HTTP methods, and you can also use `onAll` to handle all methods.
+For the request object, you will have the following properties:
+  * `params`: the parameters in the URL
+  * `method`: the HTTP method
+  * `headers`: the HTTP headers
+  * `body`: the request body
+  * `url`: the request URL
+  * `query`: the query parameters
+
+## How to access the Action Processor
+After you have written your custom logic, you can build and upload the processor project by using the following command
+
+```bash
+yarn sentio upload
+```
+
+When the processor is up and running, you can access it by calling the Sentio endpoint. Go to your project page, click on the Endpoint menu on the left sidebar. You will see the endpoints, which you can use to access the Action Processor.
+
+## Use types in Action Processor 
+By using `TypedActionProcessor` instead of `ActionProcessor`, you gain better type checking and experience. Here is an example of how to use types in Action Processor.
+
+```typescript
+TypedActionProcessor.bind()
+    .onGet('/hello/:name/:age', {
+            params: T.object({
+                name: T.string(),
+                age: T.number(),
+            }),
+            query: T.object({
+                reply: T.bool()
+            })
+        },
+        async (request) => {
+            const {reply} = request.query!
+            const {name, age} = request.params!
+            // your code
+        })
+```
+
+Here the type of `name`, `age` and `reply` will be inferred by typescript. And you will also get a better docs page for the endpoint.
+
+  
+## More features are coming soon
+Ask the Sentio team for more features you want to see in Action Processor. We are always happy to help you with your custom logic.

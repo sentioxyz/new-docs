@@ -1,0 +1,10 @@
+{
+  "title": "Alerts",
+  "pages": [
+    "save-alert-rule",
+    "get-alert-rules",
+    "delete-alert-rule",
+    "save-alert-rule2",
+    "get-alert"
+  ]
+}
