@@ -7,6 +7,7 @@ import {
   BookOpen,
   Code2,
   History,
+  Package,
 } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { SentioLogo } from '@/components/sentio-logo';
@@ -22,6 +23,10 @@ const TAB_ICONS: Record<string, ReactNode> = {
   guides: <BookOpen className="size-4" />,
   changelog: <History className="size-4" />,
 };
+
+function isExternal(url: string) {
+  return /^\w+:/.test(url) || url.startsWith('//');
+}
 
 function segmentOf(url: string) {
   // Docs are served from the site root, so the tab is the first path segment
@@ -40,6 +45,16 @@ export function SentioNav({ tabs }: { tabs: SentioTab[] }) {
 
       <nav className="sentio-nav-tabs ms-2">
         {tabs.map((tab) => {
+          if (isExternal(tab.url)) {
+            // fumadocs Link opens absolute URLs in a new tab
+            return (
+              <Link key={tab.url} href={tab.url} className="sentio-nav-tab">
+                <Package className="size-4" />
+                {tab.title}
+                <ArrowUpRight className="size-3.5 opacity-60" />
+              </Link>
+            );
+          }
           const seg = segmentOf(tab.url);
           const active = seg === current;
           return (
