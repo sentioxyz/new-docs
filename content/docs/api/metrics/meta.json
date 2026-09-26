@@ -1,8 +1,0 @@
-{
-  "title": "Metrics",
-  "pages": [
-    "get-metrics",
-    "query-instant",
-    "query-range"
-  ]
-}
