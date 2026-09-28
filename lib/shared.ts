@@ -8,6 +8,9 @@ export const appName = 'Sentio';
  */
 export { basePath } from './base-path.mjs';
 
+/** Website home, on the same domain but outside basePath (see components/sentio-home-link.tsx) */
+export const websiteHomeUrl = '/';
+
 /** Empty because docs are served from the basePath root (`/<slug>`, `/reference/...`). */
 export const docsRoute = '';
 export const docsImageRoute = '/og';
