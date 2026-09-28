@@ -10,11 +10,13 @@ export const docsContentRoute = '/llms.mdx';
 /**
  * Top nav tabs; each maps to a `root: true` folder under content/docs.
  * Guides links straight to its first page (see also the redirects in next.config.mjs).
+ * Absolute URLs are external tabs and open in a new tab.
  */
 export const SENTIO_TABS = [
   { title: 'Guides', url: '/guides/introduction/readme' },
   { title: 'API Reference', url: '/api' },
   { title: 'Changelog', url: '/changelog' },
+  { title: 'SDK Reference', url: 'https://sdk.sentio.xyz/' },
 ] as const;
 
 const getContentUrl = createGetUrl(docsContentRoute);
