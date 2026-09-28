@@ -44,9 +44,12 @@ const GROUP_TITLES = {
   users: 'Users',
 };
 
-// Endpoint groups from generate-api.mjs; api-access may already be listed
+// Hand-maintained folders, listed before the endpoint groups (they keep their own meta.json title)
+const HAND = ['api-access', 'guides'];
+
+// Endpoint groups from generate-api.mjs; the hand-maintained folders may already be listed
 const groups = readMeta(apiDir).pages.filter(
-  (g) => g !== 'api-access' && fs.existsSync(path.join(apiDir, g, 'meta.json'))
+  (g) => !HAND.includes(g) && fs.existsSync(path.join(apiDir, g, 'meta.json'))
 );
 
 /* ---------- Group meta.json titles ---------- */
@@ -67,7 +70,7 @@ writeMeta(apiDir, {
   root: true,
   // Root folders get no index node by default; without it the sidebar misbehaves on the tab root
   pagesIndex: 'index',
-  pages: ['api-access', ...groups],
+  pages: [...HAND, ...groups],
 });
 
 /* ---------- API overview page ---------- */
@@ -82,8 +85,13 @@ const firstEndpoint = (g) => {
   return page ? `/reference/${page}` : null;
 };
 
+const guides = readMeta(path.join(apiDir, 'guides'))
+  .pages.map((p) => `[${titleOf(path.join(apiDir, 'guides', `${p}.mdx`))}](/reference/${p})`)
+  .join(', ');
+
 const overview = [
   `- [API Access](${firstEndpoint('api-access')})`,
+  `- Guides: ${guides}`,
   ...groups.map((g) => `- [${GROUP_TITLES[g] || g}](${firstEndpoint(g)})`),
 ]
   .filter((l) => !l.includes('(null)'))

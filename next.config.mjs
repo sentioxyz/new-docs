@@ -2,6 +2,13 @@ import fs from 'node:fs';
 import { createMDX } from 'fumadocs-mdx/next';
 
 const referenceSlugs = JSON.parse(fs.readFileSync('./scripts/reference-slugs.json', 'utf8'));
+// ReadMe API tag pages that had content are restored as pages (content/docs/api/guides/<tag>.mdx)
+const guideTags = new Set(
+  fs
+    .readdirSync('./content/docs/api/guides')
+    .filter((f) => f.endsWith('.mdx'))
+    .map((f) => f.slice(0, -'.mdx'.length))
+);
 
 /*
  * fumadocs-mdx compiles macro configs into temporary <outDir>/macro/<hash>.mjs
@@ -43,12 +50,14 @@ const config = {
         destination: '/docs/development-and-testing',
         permanent: true,
       },
-      // ReadMe API tag pages (/reference/ai, /reference/data, ...) -> their first endpoint
-      ...Object.entries(referenceSlugs.tags).map(([tag, slug]) => ({
-        source: `/reference/${tag}`,
-        destination: `/reference/${slug}`,
-        permanent: false,
-      })),
+      // Empty ReadMe API tag pages (/reference/alerts, ...) -> their first endpoint
+      ...Object.entries(referenceSlugs.tags)
+        .filter(([tag]) => !guideTags.has(tag))
+        .map(([tag, slug]) => ({
+          source: `/reference/${tag}`,
+          destination: `/reference/${slug}`,
+          permanent: false,
+        })),
     ];
   },
 };
