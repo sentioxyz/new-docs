@@ -60,6 +60,16 @@ npm run deploy    # build and deploy (needs `wrangler login` or CLOUDFLARE_API_T
 
 Workers static assets are limited to 25 MiB per file, so keep files in `public/` below that.
 
+### Patched dependencies
+
+`patches/` holds [patch-package](https://github.com/ds300/patch-package) patches, applied on
+`npm install` / `npm ci` via `postinstall`:
+
+- `fumadocs-openapi` (pinned to an exact version so the patch keeps applying): the API
+  playground shows the endpoint path as one string, with `{params}` highlighted and a
+  copy-path button. When upgrading it, re-apply the change in `dist/ui/playground/client.js`
+  and run `npx patch-package fumadocs-openapi`.
+
 ### Fumadocs MDX
 
 Collections are defined with the [Macro API](https://fumadocs.dev/docs/mdx/macro) in `lib/source.ts`.

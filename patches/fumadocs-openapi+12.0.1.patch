@@ -1,0 +1,56 @@
+diff --git a/node_modules/fumadocs-openapi/dist/ui/playground/client.js b/node_modules/fumadocs-openapi/dist/ui/playground/client.js
+index d9b4fab..9efcf05 100644
+--- a/node_modules/fumadocs-openapi/dist/ui/playground/client.js
++++ b/node_modules/fumadocs-openapi/dist/ui/playground/client.js
+@@ -23,7 +23,8 @@ import { StfProvider, useDataEngine, useFieldValue, useListener, useStf } from "
+ import { stringifyFieldKey } from "@fumari/stf/lib/utils";
+ import { useOnChange } from "fumadocs-core/utils/use-on-change";
+ import { useTranslations } from "@fuma-translate/react";
+-import { ChevronDown, LoaderCircle, PlusIcon } from "lucide-react";
++import { Check, ChevronDown, Copy, LoaderCircle, PlusIcon } from "lucide-react";
++import { useCopyButton } from "fumadocs-ui/utils/use-copy-button";
+ import { buttonVariants } from "fumadocs-ui/components/ui/button";
+ //#region src/ui/playground/client.tsx
+ const OptionsContext = createContext({});
+@@ -393,19 +394,29 @@ function OAuth2Input({ field }) {
+ 	});
+ }
+ function Route({ route, ...props }) {
+-	return /* @__PURE__ */ jsx("div", {
++	const [isChecked, onCopy] = useCopyButton(() => {
++		navigator.clipboard.writeText(route);
++	});
++	return /* @__PURE__ */ jsxs("div", {
+ 		...props,
+-		className: cn("flex flex-row items-center gap-0.5 overflow-auto text-nowrap", props.className),
+-		children: route.split("/").map((part, index) => /* @__PURE__ */ jsxs(Fragment, { children: [index > 0 && /* @__PURE__ */ jsx("span", {
+-			className: "text-fd-muted-foreground",
+-			children: "/"
+-		}), part.startsWith("{") && part.endsWith("}") ? /* @__PURE__ */ jsx("code", {
+-			className: "bg-fd-primary/10 text-fd-primary",
+-			children: part
+-		}) : /* @__PURE__ */ jsx("code", {
+-			className: "text-fd-foreground",
+-			children: part
+-		})] }, index))
++		className: cn("flex flex-row items-center gap-1 min-w-0", props.className),
++		children: [/* @__PURE__ */ jsx("code", {
++			className: "overflow-auto text-nowrap text-fd-foreground",
++			children: route.split(/(\{[^}]+\})/).map((part, index) => part.startsWith("{") && part.endsWith("}") ? /* @__PURE__ */ jsx("span", {
++				className: "text-fd-primary",
++				children: part
++			}, index) : part)
++		}), /* @__PURE__ */ jsx("button", {
++			type: "button",
++			"aria-label": "Copy path",
++			title: "Copy path",
++			onClick: onCopy,
++			className: cn(buttonVariants({
++				variant: "ghost",
++				size: "icon-xs"
++			}), "shrink-0 text-fd-muted-foreground"),
++			children: isChecked ? /* @__PURE__ */ jsx(Check, { className: "size-3.5" }) : /* @__PURE__ */ jsx(Copy, { className: "size-3.5" })
++		})]
+ 	});
+ }
+ function DefaultCollapsiblePanel({ title, children, ...props }) {
