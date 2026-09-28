@@ -3,9 +3,13 @@
   "version": "0.0.31",
   "private": true,
   "scripts": {
+    "gen:api": "node scripts/generate-api.mjs && node scripts/generate-api-index.mjs",
+    "prebuild": "npm run gen:api",
     "build": "next build",
+    "predev": "npm run gen:api",
     "dev": "next dev",
     "start": "next start",
+    "pretypes:check": "npm run gen:api",
     "types:check": "next typegen && tsc --noEmit",
     "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
     "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",

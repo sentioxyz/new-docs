@@ -29,3 +29,8 @@ next-env.d.ts
 /.wrangler
 .dev.vars*
 cloudflare-env.d.ts
+
+# API Reference pages, generated from openapi.json by `npm run gen:api` (runs before dev/build)
+/content/docs/api/*
+!/content/docs/api/openapi.json
+!/content/docs/api/api-access/
