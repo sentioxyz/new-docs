@@ -34,3 +34,4 @@ cloudflare-env.d.ts
 /content/docs/api/*
 !/content/docs/api/openapi.json
 !/content/docs/api/api-access/
+!/content/docs/api/guides/

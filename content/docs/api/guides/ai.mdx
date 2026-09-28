@@ -1,0 +1,269 @@
+---
+title: "AI"
+description: "Create AI chat sessions, query their history, and post messages with the AI Chat API."
+---
+
+The AI Chat API provides a conversational interface to interact with Sentio's AI services. These APIs enable you to create chat sessions, retrieve conversation history, and exchange messages with the AI assistant.
+
+## Chat Session APIs
+
+### CreateChatSession
+
+Initializes a new AI chat session. Returns a `session_id` that can be used to continue the conversation. See [CreateChatSession](/reference/createchatsession-1).
+
+```bash
+curl -L -X POST 'https://api.sentio.xyz/v1/ai/chat' \
+     -H 'api-key: <API_KEY>' \
+     -H 'Content-Type: application/json' \
+     --data-raw '{
+  "messages": [
+    {
+      "role": "ROLE_USER",
+      "text": "What tables can I query in this project?"
+    }
+  ],
+  "context": {
+    "project_owner": "sentio",
+    "project_slug": "coinbase",
+    "version": 55,
+    "scenario": "SCENARIO_SQL",
+    "sql_config": {
+      "execute_query": true
+    }
+  },
+  "streaming": false,
+  "preserve_session": true
+}'
+```
+
+#### Response Example
+
+```json
+{
+  "session_id": "dee835e4-5c81-4a18-b829-d0b8daf05225",
+  "current_cursor_position": 1
+}
+```
+
+### QueryChatSession
+
+Retrieves information about an existing chat session, returning only messages after the specified cursor position. See [QueryChatSession](/reference/querychatsession-1).
+
+```bash
+curl -L -X GET 'https://api.sentio.xyz/v1/ai/chat/dee835e4-5c81-4a18-b829-d0b8daf05225?cursor_position=1' \
+     -H 'api-key: <API_KEY>'
+```
+
+#### Response Example
+
+```json
+{
+  "messages": [
+    {
+      "role": "ROLE_ASSISTANT",
+      "text": "In your current project (sentio/coinbase), you have access to the following table:\n\n- Transfer\n\nThis table contains detailed records of token transfer events on the blockchain, including information such as sender, recipient, amount, contract, chain, timestamp, transaction hash, and more.\n\nIf you need more details about the schema or want to know about additional tables (if any are added in the future), let me know!",
+      "isFinal": true,
+      "runId": "3ec1c591-fa3b-49e5-b0e6-548d28b951c0",
+      "resources": []
+    }
+  ],
+  "context": {
+    "projectOwner": "sentio",
+    "projectSlug": "coinbase",
+    "version": 55,
+    "scenario": "SCENARIO_SQL",
+    "sqlConfig": {
+      "executeQuery": true
+    }
+  },
+  "streaming": false,
+  "preserveSession": true
+}
+```
+
+### PostSessionMessage
+
+Adds a new message to an existing chat session. This triggers AI message generation as a run. See [PostSessionMessage](/reference/postsessionmessage-1).
+
+```bash
+curl -L -X POST 'https://api.sentio.xyz/v1/ai/chat/dee835e4-5c81-4a18-b829-d0b8daf05225/message' \
+     -H 'api-key: <API_KEY>' \
+     -H 'Content-Type: application/json' \
+     --data-raw '{
+  "message": {
+    "role": "ROLE_USER",
+    "text": "Can you show me the trends of total transferred amount last month?"
+  }
+}'
+```
+
+#### Response Example
+
+```json
+{
+  "current_cursor_position": 3
+}
+```
+
+### QueryChatSession with new cursor position
+
+Now the latest message contains the SQL query generated and the query execution results.
+
+```bash
+curl -L -X GET 'https://api.sentio.xyz/v1/ai/chat/dee835e4-5c81-4a18-b829-d0b8daf05225?cursor_position=3' \
+     -H 'api-key: <API_KEY>'
+```
+
+#### Response Example
+
+```jsonc
+{
+  "messages": [
+    {
+      "role": "ROLE_ASSISTANT",
+      "structured": {
+        "type": "CONTENT_TYPE_SQL",
+        "sql": {
+          "query": "SELECT \n    toDate(timestamp) AS date,\n    sum(amount) AS total_transferred_amount\nFROM Transfer\nWHERE timestamp >= today() - 30\nGROUP BY date\nORDER BY date ASC\nLIMIT 31;",
+          "explanation": "This query calculates the total transferred amount for each day over the last month. A line chart is ideal for visualizing trends over time, making it easy to spot increases or decreases in transfer activity.",
+          "chartType": "CHART_TYPE_LINE",
+          "title": "Daily Total Transferred Amount (Last 30 Days)",
+          "result": {
+            "columns": [
+              "date",
+              "total_transferred_amount"
+            ],
+            "columnTypes": {
+              "date": "TIME",
+              "total_transferred_amount": "NUMBER"
+            },
+            "rows": [
+              {
+                "date": "2025-04-22T00:00:00Z",
+                "total_transferred_amount": "1558.289727770826269139"
+              },
+              {
+                "date": "2025-04-23T00:00:00Z",
+                "total_transferred_amount": "2303.523110895662862312"
+              },
+              {
+                "date": "2025-04-24T00:00:00Z",
+                "total_transferred_amount": "4578.231482115449865617"
+              },
+              {
+                "date": "2025-04-25T00:00:00Z",
+                "total_transferred_amount": "1763.433942910581239518"
+              },
+              {
+                "date": "2025-04-26T00:00:00Z",
+                "total_transferred_amount": "2918.145051824374812537"
+              },
+              {
+                "date": "2025-04-27T00:00:00Z",
+                "total_transferred_amount": "1945.500536902645696998"
+              },
+              {
+                "date": "2025-04-28T00:00:00Z",
+                "total_transferred_amount": "2749.254948578840564123"
+              },
+              {
+                "date": "2025-04-29T00:00:00Z",
+                "total_transferred_amount": "4002.223667187583608547"
+              },
+              {
+                "date": "2025-04-30T00:00:00Z",
+                "total_transferred_amount": "716.398376317926061104"
+              },
+              {
+                "date": "2025-05-01T00:00:00Z",
+                "total_transferred_amount": "2166.170903948312979783"
+              },
+              {
+                "date": "2025-05-02T00:00:00Z",
+                "total_transferred_amount": "3867.023913879320224761"
+              },
+              {
+                "date": "2025-05-03T00:00:00Z",
+                "total_transferred_amount": "1464.158786396927715794"
+              },
+              {
+                "date": "2025-05-04T00:00:00Z",
+                "total_transferred_amount": "615.165345127534527277"
+              },
+              {
+                "date": "2025-05-05T00:00:00Z",
+                "total_transferred_amount": "1224.653971435673231375"
+              },
+              {
+                "date": "2025-05-06T00:00:00Z",
+                "total_transferred_amount": "813.408456571400702763"
+              },
+              {
+                "date": "2025-05-07T00:00:00Z",
+                "total_transferred_amount": "811.622812438621329361"
+              }
+              // ... other results
+            ],
+            "generatedAt": "2025-05-22T12:46:23.031584541Z",
+            "cursor": ""
+          }
+        }
+      },
+      "isFinal": true,
+      "runId": "988a741b-67c1-419e-a1c8-1914ce0db34c",
+      "resources": []
+    }
+  ],
+  "context": {
+    "projectOwner": "sentio",
+    "projectSlug": "coinbase",
+    "version": 55,
+    "scenario": "SCENARIO_SQL",
+    "sqlConfig": {
+      "executeQuery": true
+    }
+  },
+  "streaming": false,
+  "preserveSession": true
+}
+```
+
+## Message Structure
+
+Messages can have different roles and content types:
+
+1. **Roles**:
+   * `ROLE_USER`: Messages from the user
+   * `ROLE_ASSISTANT`: Responses from the AI
+   * `ROLE_SYSTEM`: System messages providing context
+   * `ROLE_TOOL`: Tool-generated content
+
+2. **Content Types**:
+   * Text content: Simple text messages
+   * Structured content: SQL queries, errors, or other formatted data
+
+3. **Run Information**:
+   * `run_id`: Identifies which messages belong to the same generation process
+   * `is_final`: Indicates when all messages for a run have been generated
+
+## Context Configuration
+
+The context object provides environment information for the chat session:
+
+```json
+{
+  "project_owner": "your_username_or_org",
+  "project_slug": "your_project",
+  "version": 1,
+  "scenario": "SCENARIO_SQL",
+  "sql_config": {
+    "execute_query": true
+  }
+}
+```
+
+* **project_owner**: Username or organization that owns the project
+* **project_slug**: Project identifier
+* **version**: API version to use
+* **scenario**: Specific use case (SQL, etc.)
+* **sql_config**: SQL-specific configuration options (when applicable)

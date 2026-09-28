@@ -4,9 +4,9 @@ import { createOpenAPI } from 'fumadocs-openapi/server';
 import { generateFiles } from 'fumadocs-openapi';
 
 // Everything under content/docs/api is generated (and gitignored) except the spec and the
-// hand-maintained api-access pages; wipe the rest so pages for removed operations don't linger
+// hand-maintained api-access and guides pages; wipe the rest so pages for removed operations don't linger
 const apiDir = './content/docs/api';
-const KEEP = new Set(['openapi.json', 'api-access']);
+const KEEP = new Set(['openapi.json', 'api-access', 'guides']);
 for (const entry of fs.readdirSync(apiDir)) {
   if (!KEEP.has(entry)) fs.rmSync(path.join(apiDir, entry), { recursive: true, force: true });
 }

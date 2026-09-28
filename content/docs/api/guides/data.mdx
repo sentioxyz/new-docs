@@ -1,0 +1,208 @@
+---
+title: "Data"
+description: "Query metrics, event logs, and entities with the Insight API or raw SQL, with cache control and pagination."
+---
+
+Two kinds of data API are commonly used. For metrics, event logs, and entity-related data, it's called [Insight API](#insight-api), and you can also use raw [SQL API](#sql-api).
+For subgraph projects, you can use both [SQL API](#sql-api) and [Subgraph API](/docs/hosted-subgraphs#accessing-data).
+
+## Insight API
+
+The easiest way to build a query is through the UI. You can first create an insight chart,
+
+and then
+
+![](/assets/image-101.png)
+
+The result is like:
+
+```bash
+curl -L -X POST 'https://api.sentio.xyz/v1/metrics/sentio/coinbase/query_range' \
+     -H 'api-key: <API_KEY>' \
+     -H 'Content-Type: application/json' \
+     --data-raw '{
+  "queries": [
+    {
+      "query": "mint_sum",
+      "alias": "Mint (24 hours)",
+      "id": "a",
+      "labelSelector": {},
+      "aggregate": null,
+      "functions": [
+        {
+          "name": "rollup_sum",
+          "arguments": [
+            {
+              "durationValue": {
+                "value": 1,
+                "unit": "d"
+              }
+            }
+          ]
+        }
+      ],
+      "disabled": false
+    },
+    {
+      "query": "burn_sum",
+      "alias": "Burn (24 hours)",
+      "id": "b",
+      "labelSelector": {},
+      "aggregate": null,
+      "functions": [
+        {
+          "name": "rollup_sum",
+          "arguments": [
+            {
+              "durationValue": {
+                "value": 1,
+                "unit": "d"
+              }
+            }
+          ]
+        }
+      ],
+      "disabled": false
+    }
+  ],
+  "formulas": [],
+  "timeRange": {
+    "start": "now-30d",
+    "end": "now",
+    "step": 3600,
+    "timezone": "America/Los_Angeles"
+  },
+  "samplesLimit": 20
+}'
+```
+
+See [QueryRange](/reference/queryrange-1) for the full request and response schema.
+
+### Time Range Configuration Guide
+
+When configuring a time range, you can specify the `start` and `end` times, as well as the `step` interval and `timezone`. Below are the details on how to set these parameters:
+
+1. **Start and End Time**:
+
+   * **`now`**: Represents the current time, usually used in the `end` field.
+   * **`now-x[dmsy]`**: Represents the time range starting from the last specified period until now. For example, `now-30d` means the last 30 days from now. The units can be:
+     * `s` for seconds
+     * `m` for minutes
+     * `d` for days
+     * `w` for weeks
+     * `mo` for months
+     * `y` for years
+   * **Milliseconds since January 1, 1970, UTC**: You can specify a precise time using the number of milliseconds since the Unix epoch (January 1, 1970, UTC). For example, `1716430188709`.
+
+2. **Step**:
+
+   * The interval time of data in seconds. This controls how frequently data points should appear in your range. For example, if you set `step` to `3600`, data points will appear at one-hour intervals. Please note that the actual step may be adjusted if the interval is short but the date range is long. Typically, the total number of data points should not exceed 1000.
+
+3. **Timezone**:
+
+   * Specify the timezone using the tz database name. You can find the appropriate timezone from this [list](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones). For example, `America/New_York` or `Asia/Tokyo`.
+
+#### Example Configuration
+
+Here's an example configuration that uses these parameters:
+
+```json
+{
+  "start": "now-30d",
+  "end": "now",
+  "step": 3600,
+  "timezone": "America/New_York"
+}
+```
+
+* **Start**: The range starts from 30 days ago.
+* **End**: The range ends at the current time.
+* **Step**: Data points are provided every hour.
+* **Timezone**: The times are adjusted to the Eastern Time Zone (`America/New_York`).
+
+This configuration ensures that you get hourly data points for the last 30 days, adjusted to the specified timezone.
+
+## SQL API
+
+For SQL API, go to "Data Studio" -> "SQL Editor", write your query and then click "Export as cURL"
+
+![](/assets/image-102.png)
+
+Then it shows things like
+
+```bash
+curl -L -X POST 'https://api.sentio.xyz/v1/analytics/sentio/coinbase/sql/execute' \
+     -H 'api-key: <API_KEY>' \
+     -H 'Content-Type: application/json' \
+     --data-raw '{
+  "sqlQuery": {
+    "sql": "SELECT uniq(distinct_id) FROM `Transfer` \n"
+  }
+}'
+```
+
+See [ExecuteSQL](/reference/executesql-1) for the full request and response schema.
+
+## Cache Control
+
+Each API can directly control cache strategy by adding a `cachePolicy` field as follows. The default cache behavior is to have a long cache TTL and short refresh TTL, so the query is cached most of the time but if it's stale, it triggers background refreshing.
+
+```
+{
+   ...
+   cache_policy: {
+      cache_ttl_secs: number // ttl for cache
+      no_cache: bool // don't use cache for this query (don't do refreshing)
+      cache_refresh_ttl_secs: number // ttl for triggering background refresh
+      force_refresh: bool // force caching refresh now on this query.
+   }
+}
+```
+
+API will also return information about the caching and other stats as follows:
+
+```
+{
+   ...
+   compute_stats: {
+      computed_at: timestamp // when the result is computed
+      is_cached: bool // is the result come from cache
+      is_refreshing: bool // is the background refreshing triggering
+   }
+}
+```
+
+## Pagination
+
+The SQL API uses cursor-based pagination for handling large datasets. Follow these steps:
+
+1. **Initial Request**: Send a `POST` request to the API endpoint with the `Content-Type: application/json` header and your `api-key`. The request body should be a JSON object containing the `sqlQuery` field:
+
+   ```
+   {
+     "sqlQuery": {
+       "sql": "YOUR_SQL_QUERY",
+       "size": OPTIONAL_PAGE_SIZE
+     }
+   }
+   ```
+
+2. **Check Response**: Parse the JSON response. If it contains a non-empty `cursor` field, there's more data.
+
+3. **Subsequent Requests**: For the next page, send another `POST` request to the same endpoint with the same headers. The request body should only contain the `cursor` field, using the value from the previous response:
+
+   ```json
+   {
+     "cursor": "PREVIOUS_CURSOR_VALUE"
+   }
+   ```
+
+4. **Repeat**: Continue making subsequent requests, updating the `cursor` with the value from each response, until the `cursor` field in the response is empty or missing.
+
+5. **Complete**: Once the `cursor` is empty, you have retrieved all the data.
+
+**Key Points**
+
+* Use the `cursor` from the previous response for the next request.
+* Do not include the `sqlQuery` field in subsequent requests.
+* Pagination continues until an empty `cursor` is received.
