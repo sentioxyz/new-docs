@@ -3,6 +3,10 @@
 @import 'fumadocs-ui/css/preset.css';
 @import 'fumadocs-openapi/css/preset.css';
 
+/* Streamdown (AI Elements' MessageResponse) ships Tailwind classes in its bundle */
+@source '../node_modules/streamdown/dist/*.js';
+@source '../node_modules/@streamdown/code/dist/*.js';
+
 /* ==========================================================================
    Sentio brand tokens — extracted from https://www.sentio.xyz/
    ========================================================================== */
@@ -951,4 +955,14 @@ a[data-card][class*='bg-fd-card']:hover {
 ::selection {
   background-color: var(--s-selection-bg);
   color: var(--s-selection-fg);
+}
+
+/* ==========================================================================
+   Ask AI panel (components/ai/search.tsx)
+   ========================================================================== */
+
+/* Match the site's subtle accent (as on the sidebar search) instead of shadcn's solid ring */
+#nd-ai-panel [data-slot='input-group']:has([data-slot='input-group-control']:focus-visible) {
+  border-color: var(--s-accent-ring);
+  box-shadow: 0 0 0 3px var(--s-hairline-soft);
 }
