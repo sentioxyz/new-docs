@@ -814,6 +814,12 @@ body::after {
   color: var(--s-inline-code-fg);
 }
 
+/* The OpenAPI playground splits "/v1/..." on "/" and renders the leading empty segment as
+   an empty <code>, which the padding/border above would draw as a blank pill */
+.prose :not(pre) > code:empty {
+  display: none;
+}
+
 /* ==========================================================================
    Code blocks
    ========================================================================== */
