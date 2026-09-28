@@ -90,7 +90,7 @@ const overview = [
 
 fs.writeFileSync(
   path.join(apiDir, 'index.mdx'),
-  `---\ntitle: "API Reference"\ndescription: "Complete reference for the Sentio REST API"\n---\n\nBase URL: \`https://api.sentio.xyz\`\n\n${overview}\n`
+  `---\ntitle: "API Reference"\ndescription: "Complete reference for the Sentio REST API"\n---\n\nBase URL: \`https://api.sentio.xyz\`\n\nEvery request needs an API key in the \`api-key\` header, see [Authentication](/api/api-access/authentication).\n\n${overview}\n`
 );
 
 console.log(`Generated API index: 1 overview + ${groups.length + 1} endpoint groups`);

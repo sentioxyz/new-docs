@@ -455,23 +455,11 @@ fs.writeFileSync(
   ) + '\n'
 );
 
-/* ---------- 7. ReadMeConfig (API access) → api/ ---------- */
+/* ---------- 7. ReadMeConfig (API access) ---------- */
 
-const apiAccessOut = path.join(DOCS_OUT, 'api', 'api-access');
-fs.mkdirSync(apiAccessOut, { recursive: true });
-const apiAccessPages = [];
-for (const f of walk(path.join(SRC, 'reference/ReadMeConfig')).filter((f) => f.endsWith('.md'))) {
-  const { title, description, body } = parseFM(fs.readFileSync(f, 'utf8'));
-  const n = slug(f);
-  const fm = [`title: ${JSON.stringify(title || n)}`];
-  if (description) fm.push(`description: ${JSON.stringify(description)}`);
-  fs.writeFileSync(path.join(apiAccessOut, n + '.mdx'), `---\n${fm.join('\n')}\n---\n${rewrite(body)}`);
-  apiAccessPages.push(n);
-}
-fs.writeFileSync(
-  path.join(apiAccessOut, 'meta.json'),
-  JSON.stringify({ title: 'API Access', pages: apiAccessPages }, null, 2) + '\n'
-);
+// ReadMe's reference/ReadMeConfig pages are empty placeholders whose content ReadMe renders
+// itself (api_config: getting-started / authentication / my-requests), so they are not migrated.
+// content/docs/api/api-access is maintained by hand instead.
 
 /* ---------- 8. Tab meta.json and index pages ---------- */
 
