@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import { createMDX } from 'fumadocs-mdx/next';
+import { basePath } from './lib/base-path.mjs';
 
 const referenceSlugs = JSON.parse(fs.readFileSync('./scripts/reference-slugs.json', 'utf8'));
 // ReadMe API tag pages that had content are the tag folders' intro pages (content/docs/api/<tag>/index.mdx)
@@ -17,6 +18,8 @@ const withMDX = createMDX({
 /** @type {import('next').NextConfig} */
 const config = {
   reactStrictMode: true,
+  // Mounted at www.sentio.xyz/docs (see lib/base-path.mjs)
+  basePath,
   serverExternalPackages: ['shiki', '@shikijs/core'],
   /*
    * Turbopack's persistent build cache fails with EPERM on atomic rename in
@@ -28,21 +31,23 @@ const config = {
   // Allows a clean build when the previous output can't be removed
   distDir: process.env.NEXT_DIST_DIR || '.next',
   /*
-   * Pages are served at their old ReadMe URLs (see lib/source.ts); these cover the ReadMe URLs
-   * that are not pages here, mirroring what docs.sentio.xyz did.
+   * Sources and destinations are relative to basePath. Guides pages sit at the root
+   * (/docs/<slug> on the website); these cover the ReadMe URLs that are not pages here.
    */
   async redirects() {
     return [
-      // Tab roots open their first page (keep in sync with SENTIO_TABS in lib/shared.ts)
-      { source: '/', destination: '/docs/readme', permanent: false },
-      { source: '/docs', destination: '/docs/readme', permanent: true },
+      // Tab root opens its first page (keep in sync with SENTIO_TABS in lib/shared.ts)
+      { source: '/', destination: '/readme', permanent: false },
+      // Guides lived under /docs/<slug> on docs.sentio.xyz; tolerate the doubled prefix
+      { source: '/docs', destination: '/readme', permanent: true },
+      { source: '/docs/:slug*', destination: '/:slug*', permanent: true },
       // ReadMe folder pages that were empty, and a folder slug ReadMe kept with spaces
-      { source: '/docs/concepts', destination: '/docs/abi', permanent: true },
-      { source: '/docs/solana-deprecated', destination: '/docs/decode-solana-instructions', permanent: true },
-      { source: '/docs/visualizations', destination: '/docs/dashboard', permanent: true },
+      { source: '/concepts', destination: '/abi', permanent: true },
+      { source: '/solana-deprecated', destination: '/decode-solana-instructions', permanent: true },
+      { source: '/visualizations', destination: '/dashboard', permanent: true },
       {
-        source: '/docs/:slug(Development%20and%20Testing|development%20and%20testing)',
-        destination: '/docs/development-and-testing',
+        source: '/:slug(Development%20and%20Testing|development%20and%20testing)',
+        destination: '/development-and-testing',
         permanent: true,
       },
       // Empty ReadMe API tag pages (/reference/alerts, ...) -> their first endpoint

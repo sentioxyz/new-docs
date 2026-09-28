@@ -5,5 +5,10 @@ import staticAssetsIncrementalCache from '@opennextjs/cloudflare/overrides/incre
 // served read-only from Workers static assets (no R2/KV needed).
 export default defineCloudflareConfig({
   incrementalCache: staticAssetsIncrementalCache,
-  enableCacheInterception: true,
+  /*
+   * Off because of basePath: the interceptor misses the per-segment prefetch data and answers
+   * `Next-Router-Segment-Prefetch` requests with the full page RSC, which sends the client
+   * router into an endless prefetch loop. Next.js serves the same cache entries itself.
+   */
+  enableCacheInterception: false,
 });

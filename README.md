@@ -24,24 +24,30 @@ In the project, you can see:
 
 | Route                  | Description                                                       |
 | ---------------------- | ----------------------------------------------------------------- |
-| `app/[[...slug]]`      | Doc pages, served at their ReadMe URLs (`/docs/…`, `/reference/…`). |
+| `app/[[...slug]]`      | Doc pages (`/<slug>`, `/reference/…`, `/changelog/…` under basePath). |
 | `app/api/search`       | The Route Handler for search.                                     |
 | `proxy.ts`             | Markdown content negotiation (`.md` suffix / `Accept`).           |
 
 ## URLs
 
-Pages keep the URLs of the old ReadMe site (docs.sentio.xyz), so no redirect table is needed:
+The site is mounted under **`/docs` on the website domain** (Next.js `basePath`, set in
+`lib/base-path.mjs`): `www.sentio.xyz/docs` in production, `website-test.sentio.xyz/docs` for
+test. Worker routes on `/docs` (see `wrangler.jsonc`) take precedence over the website origin.
+Paths below are relative to basePath; page slugs keep those of the old ReadMe site:
 
 | Folder                  | URL                  | Slug                                                     |
 | ----------------------- | -------------------- | -------------------------------------------------------- |
-| `content/docs/guides`   | `/docs/<slug>`       | file name (a folder's `index.mdx` takes the folder name) |
+| `content/docs/guides`   | `/<slug>`            | file name (a folder's `index.mdx` takes the folder name) |
 | `content/docs/api`      | `/reference/<slug>`  | ReadMe slug from `scripts/reference-slugs.json`          |
 | `content/docs/changelog`| `/changelog/<slug>`  | file name                                                |
 
-Folders only shape the sidebar; `readmeSlugs()` in `lib/source.ts` flattens them, so page
-file names must be unique within a tab (the build fails on duplicates). The few ReadMe URLs
-that are not pages here (empty folder pages, API tag pages) are redirects in `next.config.mjs`.
-Link to pages by their URL, e.g. `[API Key](/docs/api-key)`.
+Guides sit at the root, so no guide may be named `reference` or `changelog`. Folders only
+shape the sidebar; `readmeSlugs()` in `lib/source.ts` flattens them, so page file names must
+be unique within a tab (the build fails on duplicates). The few ReadMe URLs that are not pages
+here (empty folder pages, API tag pages, the old `/docs/<slug>` guide prefix) are redirects in
+`next.config.mjs`. Link to pages by their URL without basePath, e.g. `[API Key](/api-key)`;
+Next.js adds `/docs`. It does not for raw `<img src>` in MDX (`lib/remark-base-path.ts` handles
+those), `fetch` calls or plain `<img>` in components: prefix `basePath` from `lib/shared.ts` there.
 
 ## Content pipeline
 
@@ -65,15 +71,32 @@ automatically before `dev`, `build` and `types:check`. To change an endpoint pag
 
 ## Deploy
 
-The site runs on Cloudflare Workers via [OpenNext](https://opennext.js.org/cloudflare)
-(Worker name `test-docs`, see `wrangler.jsonc`). Every push to `main` deploys through
-`.github/workflows/deploy.yml`, which needs the `CLOUDFLARE_API_TOKEN` and
-`CLOUDFLARE_ACCOUNT_ID` repository secrets.
+The site runs on Cloudflare Workers via [OpenNext](https://opennext.js.org/cloudflare), one
+Worker per environment (see `wrangler.jsonc`). GitHub Actions deploys with the
+`CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` secrets:
+
+| Environment | Worker        | URL                            | Workflow                                          |
+| ----------- | ------------- | ------------------------------ | ------------------------------------------------- |
+| test        | `test-docs`   | `website-test.sentio.xyz/docs` | `deploy.yml`: every push to `main`                |
+| production  | `sentio-docs` | `www.sentio.xyz/docs`          | `deploy-production.yml`: manual, releases a chosen ref |
+
+To release: Actions → **Deploy (production)** → Run workflow, with the branch, tag or SHA to ship
+(default `main`). The job runs in the `production` GitHub Environment; add required reviewers
+there to gate releases. Its first run creates the `sentio-docs` Worker and its routes.
+
+`NEXT_PUBLIC_SITE_URL` (the website origin, used for metadata and OG image URLs) is inlined at
+build time, so each environment is built separately.
 
 ```bash
-npm run preview   # build and serve locally in the Workers runtime
-npm run deploy    # build and deploy (needs `wrangler login` or CLOUDFLARE_API_TOKEN)
+npm run preview            # build and serve locally in the Workers runtime (localhost:8787/docs)
+npm run deploy             # build and deploy to test (needs `wrangler login` or CLOUDFLARE_API_TOKEN)
+npm run deploy:production  # build and deploy to production
 ```
+
+`npm run build:cf` copies `cloudflare/_headers` to the asset root after the OpenNext build
+(under `public/` it would land in `assets/docs/` and be ignored).
+OpenNext's cache interception is off (`open-next.config.ts`): under basePath it answers
+segment prefetches with the full page payload, which loops the client router.
 
 Workers static assets are limited to 25 MiB per file, so keep files in `public/` below that.
 
@@ -87,6 +110,9 @@ Workers static assets are limited to 25 MiB per file, so keep files in `public/`
   Copy URL button (server URL + path, with the path/query params filled in the form; unfilled
   path params stay `{placeholders}`, API keys are never included). When upgrading it, re-apply the change in `dist/ui/playground/client.js`
   and run `npx patch-package fumadocs-openapi`.
+- `fumadocs-ui`: the page actions (Copy Markdown, Open in ChatGPT/Claude) read basePath from
+  Vite's `import.meta.env.BASE_URL` only; the patch uses Next.js' `__NEXT_ROUTER_BASEPATH`, in
+  `dist/layouts/shared/page-actions.js`. Re-apply with `npx patch-package fumadocs-ui`.
 
 ### Fumadocs MDX
 

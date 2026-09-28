@@ -1,0 +1,63 @@
+name: Deploy (production)
+
+# Manual release: builds the chosen ref with OpenNext and deploys it to the production Worker
+# `sentio-docs` (env.production in wrangler.jsonc), served at www.sentio.xyz/docs.
+# The first run creates the Worker and attaches its routes.
+#
+# The job runs in the `production` GitHub Environment: add required reviewers there
+# (Settings -> Environments) to gate releases, and optionally environment-scoped
+# CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID secrets, which take precedence over the repo ones.
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: Branch, tag or commit SHA to release
+        type: string
+        default: main
+        required: true
+
+# One production release at a time; queue instead of cancelling a deploy halfway
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment:
+      name: production
+      url: https://www.sentio.xyz/docs
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.ref }}
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      - name: Build and deploy
+        run: npm run deploy:production
+        env:
+          # Inlined at build time (metadataBase, OG image URLs)
+          NEXT_PUBLIC_SITE_URL: https://www.sentio.xyz
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      - name: Summary
+        env:
+          REF: ${{ inputs.ref }}
+        run: |
+          {
+            echo "### Released to www.sentio.xyz/docs"
+            echo
+            echo "- Ref: \`$REF\`"
+            echo "- Commit: \`$(git rev-parse HEAD)\`"
+          } >> "$GITHUB_STEP_SUMMARY"
