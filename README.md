@@ -56,7 +56,9 @@ node scripts/migrate-changelog.mjs                     # changelog posts from do
 ```
 
 The API Reference pages under `content/docs/api` are build output, not source: only
-`openapi.json` and the hand-maintained `api-access/` pages are committed. `npm run gen:api`
+`openapi.json`, the hand-maintained `api-access/` pages and the tag intro pages
+(`<tag>/index.mdx`, served at `/reference/<tag>`) are committed. Endpoints are grouped into one
+folder per OpenAPI tag, as on ReadMe. `npm run gen:api`
 (`generate-api.mjs` + `generate-api-index.mjs`) wipes and regenerates the rest, and runs
 automatically before `dev`, `build` and `types:check`. To change an endpoint page, update
 `openapi.json` (or the scripts), never the generated `.mdx`.

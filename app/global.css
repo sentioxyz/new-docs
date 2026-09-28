@@ -540,6 +540,17 @@ body::after {
     pointer-events: none;
   }
 
+  /* Group title that opens the folder's index page */
+  a.sentio-sidebar-group-title {
+    cursor: pointer;
+    pointer-events: auto;
+  }
+
+  a.sentio-sidebar-group-title:hover,
+  a.sentio-sidebar-group-title[data-active='true'] {
+    color: var(--foreground);
+  }
+
   .sentio-sidebar-group-items {
     display: flex;
     flex-direction: column;
@@ -676,6 +687,12 @@ body::after {
 #nd-sidebar-mobile a,
 #nd-sidebar-mobile .sentio-sidebar-folder {
   letter-spacing: normal;
+}
+
+/* ...except group titles that link to their folder's index page */
+#nd-sidebar a.sentio-sidebar-group-title,
+#nd-sidebar-mobile a.sentio-sidebar-group-title {
+  letter-spacing: 0.04em;
 }
 
 #nd-sidebar a[data-active='true'] {
