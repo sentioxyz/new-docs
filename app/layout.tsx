@@ -9,6 +9,10 @@ import { basePath, SENTIO_TABS } from '@/lib/shared';
 import { SentioNav } from '@/components/sentio-nav';
 import { SentioSidebarGroup } from '@/components/sentio-sidebar-group';
 import { SentioThemeSwitch } from '@/components/sentio-theme-switch';
+import { AISearch, AISearchPanel, AISearchTrigger } from '@/components/ai/search';
+import { buttonVariants } from '@/components/ui/button';
+import { cn } from '@/lib/cn';
+import { MessageCircleIcon } from 'lucide-react';
 import './global.css';
 
 const haffer = localFont({
@@ -95,6 +99,22 @@ export default function Layout({ children }: { children: ReactNode }) {
              */
             slots={{ themeSwitch: SentioThemeSwitch }}
           >
+            {/* Ask AI: answers come from an AgentConnect agent via /api/chat (lib/ask-ai.ts) */}
+            <AISearch>
+              <AISearchPanel />
+              <AISearchTrigger
+                position="float"
+                className={cn(
+                  buttonVariants({
+                    variant: 'secondary',
+                    className: 'text-fd-muted-foreground rounded-2xl',
+                  }),
+                )}
+              >
+                <MessageCircleIcon className="size-4.5" />
+                Ask AI
+              </AISearchTrigger>
+            </AISearch>
             {children}
           </DocsLayout>
         </RootProvider>

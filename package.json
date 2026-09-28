@@ -20,16 +20,26 @@
     "deploy:production": "npm run build:cf && opennextjs-cloudflare deploy --env production"
   },
   "dependencies": {
+    "@ai-sdk/react": "^4.0.121",
     "@opennextjs/cloudflare": "^1.20.6",
+    "@streamdown/code": "^1.1.1",
+    "ai": "^7.0.118",
+    "class-variance-authority": "^0.7.1",
+    "cmdk": "^1.1.1",
     "cn": "^0.3.0",
     "fumadocs-core": "16.15.12",
     "fumadocs-mdx": "15.4.3",
     "fumadocs-openapi": "12.0.1",
     "fumadocs-ui": "npm:@fumadocs/base-ui@16.15.12",
     "lucide-react": "^1.47.0",
+    "motion": "^13.4.4",
+    "nanoid": "^6.0.1",
     "next": "16.3.5",
+    "radix-ui": "^1.6.7",
     "react": "^19.3.0",
-    "react-dom": "^19.3.0"
+    "react-dom": "^19.3.0",
+    "streamdown": "^2.6.0",
+    "use-stick-to-bottom": "^1.1.6"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.3.3",

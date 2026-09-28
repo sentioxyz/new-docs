@@ -29,6 +29,14 @@
   "images": {
     "binding": "IMAGES"
   },
+  // Per-visitor limit for Ask AI (/api/chat); AgentConnect only caps concurrent turns per conversation
+  "ratelimits": [
+    {
+      "name": "ASK_AI_RATE_LIMITER",
+      "namespace_id": "1001",
+      "simple": { "limit": 10, "period": 60 }
+    }
+  ],
   "observability": {
     "enabled": true
   },
@@ -50,7 +58,15 @@
       ],
       "images": {
         "binding": "IMAGES"
-      }
+      },
+      // Separate namespace so test and production traffic are counted apart
+      "ratelimits": [
+        {
+          "name": "ASK_AI_RATE_LIMITER",
+          "namespace_id": "1002",
+          "simple": { "limit": 10, "period": 60 }
+        }
+      ]
     }
   }
 }
