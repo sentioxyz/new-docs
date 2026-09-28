@@ -71,14 +71,18 @@ automatically before `dev`, `build` and `types:check`. To change an endpoint pag
 
 ## Deploy
 
-The site runs on Cloudflare Workers via [OpenNext](https://opennext.js.org/cloudflare)
-(see `wrangler.jsonc`), deployed by `.github/workflows/deploy.yml`, which needs the
-`CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` repository secrets:
+The site runs on Cloudflare Workers via [OpenNext](https://opennext.js.org/cloudflare), one
+Worker per environment (see `wrangler.jsonc`). GitHub Actions deploys with the
+`CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` secrets:
 
-| Environment | Worker        | URL                               | Deployed on                         |
-| ----------- | ------------- | --------------------------------- | ----------------------------------- |
-| test        | `test-docs`   | `website-test.sentio.xyz/docs`    | every push to `main`                |
-| production  | `sentio-docs` | `www.sentio.xyz/docs`             | manual run (`environment: production`) |
+| Environment | Worker        | URL                            | Workflow                                          |
+| ----------- | ------------- | ------------------------------ | ------------------------------------------------- |
+| test        | `test-docs`   | `website-test.sentio.xyz/docs` | `deploy.yml`: every push to `main`                |
+| production  | `sentio-docs` | `www.sentio.xyz/docs`          | `deploy-production.yml`: manual, releases a chosen ref |
+
+To release: Actions → **Deploy (production)** → Run workflow, with the branch, tag or SHA to ship
+(default `main`). The job runs in the `production` GitHub Environment; add required reviewers
+there to gate releases. Its first run creates the `sentio-docs` Worker and its routes.
 
 `NEXT_PUBLIC_SITE_URL` (the website origin, used for metadata and OG image URLs) is inlined at
 build time, so each environment is built separately.
