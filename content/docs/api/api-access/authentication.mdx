@@ -7,11 +7,12 @@ Every request to the Sentio API at `https://api.sentio.xyz` is authenticated wit
 
 ## Get an API key
 
-Create a key on the [API keys](https://app.sentio.xyz/profile/apikeys) page of your profile. See [API Key](/guides/admin/api-key) for a walkthrough.
+There are two kinds of API keys:
 
-<Callout>
-  To call the API on behalf of an organization, switch your account to that organization before creating the key.
-</Callout>
+- **Personal keys** act as your own account. Create one on the [API keys](https://app.sentio.xyz/profile/apikeys) page of your profile.
+- **Organization keys** act on behalf of an organization, for example in shared services or CI that shouldn't depend on one member's account. Create one on the organization's API keys page, `https://app.sentio.xyz/organizations/<org>/apikeys`.
+
+Both kinds are sent the same way. See [API Key](/guides/admin/api-key) for a walkthrough.
 
 ## Send the key
 
@@ -33,5 +34,5 @@ curl 'https://api.sentio.xyz/v1/dashboards?ownerName=<owner>&slug=<slug>&api-key
 Prefer the header: query strings tend to end up in logs and browser history.
 
 <Callout type="warn">
-  An API key acts with your account's permissions. Keep it secret, and never commit it or ship it in client-side code.
+  An API key acts with the permissions of the account or organization it belongs to. Keep it secret, and never commit it or ship it in client-side code.
 </Callout>
