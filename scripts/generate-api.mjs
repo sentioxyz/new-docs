@@ -13,12 +13,11 @@ for (const entry of fs.readdirSync(apiDir)) {
 
 const openapi = createOpenAPI({ input: ['./content/docs/api/openapi.json'] });
 
-// QuerySQLExecutionDetail -> query-sql-execution-detail, GetPriceV2 -> get-price-v2
-const kebab = (s) =>
-  s
-    .replace(/([a-z0-9])([A-Z])/g, '$1-$2')
-    .replace(/([A-Z]+)([A-Z][a-z])/g, '$1-$2')
-    .toLowerCase();
+// File name = the page's ReadMe slug (/reference/<slug>, see lib/source.ts). Operations added
+// after the ReadMe migration fall back to the lowercased operationId, as ReadMe did.
+const { operations: readmeSlugs } = JSON.parse(
+  fs.readFileSync('./scripts/reference-slugs.json', 'utf8')
+);
 
 await generateFiles({
   input: openapi,
@@ -30,10 +29,11 @@ await generateFiles({
     const m = p.match(/^\/(?:v\d+\/)?(?:api\/v\d+\/)?([^/]+)/);
     return m ? m[1] : 'general';
   },
-  // File name (and URL slug) from the kebab-cased operationId; every operation in the spec has one
+  // Every operation in the spec has an operationId
   name(output) {
     const { path, method } = output.item;
-    return kebab(this.document.paths[path][method].operationId);
+    const id = this.document.paths[path][method].operationId;
+    return readmeSlugs[id] ?? id.toLowerCase();
   },
   meta: true,
 });

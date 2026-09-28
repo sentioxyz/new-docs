@@ -613,7 +613,7 @@ body::after {
 }
 
 /* The logo is already in the top nav */
-#nd-sidebar a[href='/guides'] {
+#nd-sidebar a[href='/docs'] {
   display: none;
 }
 

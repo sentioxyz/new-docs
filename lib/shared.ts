@@ -2,7 +2,7 @@ import { createGetUrl } from 'fumadocs-core/source';
 
 export const appName = 'Sentio';
 
-/** Empty because docs are served from the site root (`/guides/...`). */
+/** Empty because docs are served from the site root (`/docs/...`, `/reference/...`). */
 export const docsRoute = '';
 export const docsImageRoute = '/og';
 export const docsContentRoute = '/llms.mdx';
@@ -13,8 +13,8 @@ export const docsContentRoute = '/llms.mdx';
  * Absolute URLs are external tabs and open in a new tab.
  */
 export const SENTIO_TABS = [
-  { title: 'Guides', url: '/guides/introduction/readme' },
-  { title: 'API Reference', url: '/api' },
+  { title: 'Guides', url: '/docs/readme' },
+  { title: 'API Reference', url: '/reference' },
   { title: 'Changelog', url: '/changelog' },
   { title: 'SDK Reference', url: 'https://sdk.sentio.xyz/' },
 ] as const;

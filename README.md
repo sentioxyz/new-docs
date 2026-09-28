@@ -24,9 +24,24 @@ In the project, you can see:
 
 | Route                  | Description                                                       |
 | ---------------------- | ----------------------------------------------------------------- |
-| `app/[[...slug]]`      | Doc pages, served from the site root (`/guides`, `/api`, …).      |
+| `app/[[...slug]]`      | Doc pages, served at their ReadMe URLs (`/docs/…`, `/reference/…`). |
 | `app/api/search`       | The Route Handler for search.                                     |
-| `proxy.ts`             | Markdown content negotiation and old ReadMe URL redirects.        |
+| `proxy.ts`             | Markdown content negotiation (`.md` suffix / `Accept`).           |
+
+## URLs
+
+Pages keep the URLs of the old ReadMe site (docs.sentio.xyz), so no redirect table is needed:
+
+| Folder                  | URL                  | Slug                                                     |
+| ----------------------- | -------------------- | -------------------------------------------------------- |
+| `content/docs/guides`   | `/docs/<slug>`       | file name (a folder's `index.mdx` takes the folder name) |
+| `content/docs/api`      | `/reference/<slug>`  | ReadMe slug from `scripts/reference-slugs.json`          |
+| `content/docs/changelog`| `/changelog/<slug>`  | file name                                                |
+
+Folders only shape the sidebar; `readmeSlugs()` in `lib/source.ts` flattens them, so page
+file names must be unique within a tab (the build fails on duplicates). The few ReadMe URLs
+that are not pages here (empty folder pages, API tag pages) are redirects in `next.config.mjs`.
+Link to pages by their URL, e.g. `[API Key](/docs/api-key)`.
 
 ## Content pipeline
 
@@ -34,10 +49,10 @@ In the project, you can see:
 run the scripts in this order (each one depends on the output of the previous ones):
 
 ```bash
-node scripts/migrate.mjs [source-dir]    # guides tab from the ReadMe docs repo
-npm run gen:api                          # API pages from content/docs/api/openapi.json
-node scripts/generate-redirects.mjs      # lib/legacy-redirects.json (/docs/*, /reference/* -> new pages)
-node scripts/migrate-changelog.mjs       # changelog posts from docs.sentio.xyz
+node scripts/migrate.mjs [source-dir]                  # guides tab from the ReadMe docs repo
+node scripts/extract-reference-slugs.mjs [source-dir]  # scripts/reference-slugs.json (API page slugs)
+npm run gen:api                                        # API pages from content/docs/api/openapi.json
+node scripts/migrate-changelog.mjs                     # changelog posts from docs.sentio.xyz
 ```
 
 The API Reference pages under `content/docs/api` are build output, not source: only
