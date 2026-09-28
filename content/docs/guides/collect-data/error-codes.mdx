@@ -18,7 +18,7 @@ The first digit of the code tells you the category:
 | 3xx   | Processor errors | You. Caused by the processor's code, configuration, or schema. Fix the processor and re-upload.           |
 | 4xx   | Billing errors  | You. The project has hit plan limits. Upgrade the plan or reduce usage.                                    |
 
-If a 1xx or 2xx error persists for a long time, please [contact support](/guides/support/getting-support).
+If a 1xx or 2xx error persists for a long time, please [contact support](/docs/getting-support).
 
 ## System Errors (1xx)
 
@@ -63,7 +63,7 @@ Errors caused by the processor itself — its handler code, configuration, or sc
 | 300  | Unexpected Processor Config               | The processor configuration does not match the data being processed — for example, data arrived for which no handler is registered.                                        |
 | 301  | Invalid Entity Schema                     | The entity schema (`schema.graphql`) is invalid or uses unsupported constructs.                                                                                            |
 | 302  | Processor Configs Has Diff                | Multiple instances of the same processor produced different configurations. This usually means the processor setup code is non-deterministic (e.g. uses random values or timestamps when registering handlers). |
-| 303  | Process Failed                            | A handler threw an error at runtime — the most common error for bugs in handler code (null access, failed assertions, unhandled exceptions). Check the error detail and stack trace, and see [Troubleshooting](/guides/collect-data/troubleshooting). |
+| 303  | Process Failed                            | A handler threw an error at runtime — the most common error for bugs in handler code (null access, failed assertions, unhandled exceptions). Check the error detail and stack trace, and see [Troubleshooting](/docs/troubleshooting). |
 | 304  | Call WASM Export Function Failed          | Calling an exported function of the subgraph WebAssembly module failed.                                                                                                    |
 | 305  | WASM Init Failed                          | The subgraph WebAssembly module failed to initialize.                                                                                                                      |
 | 306  | WASM Stack Overflow                       | The subgraph handler overflowed the WebAssembly stack — usually caused by infinite or overly deep recursion.                                                               |
@@ -81,7 +81,7 @@ Errors caused by the processor itself — its handler code, configuration, or sc
 | 318  | Delete Unknown Entity                     | The handler tried to delete an entity type that is not defined in the schema.                                                                                              |
 | 319  | Update Immutable Entity                   | The handler tried to modify an entity that is declared immutable in the schema.                                                                                            |
 | 320  | Invalid Entity Field Value                | An entity field value does not match its declared type — for example, wrong type, `null` for a non-nullable field, or a value out of range.                                |
-| 321  | Invalid Time Series Data                  | A metric or event log record is invalid — for example, an invalid metric / label name or an unsupported value. See [Metrics](/guides/collect-data/data-outputs/metrics) for naming rules.                |
+| 321  | Invalid Time Series Data                  | A metric or event log record is invalid — for example, an invalid metric / label name or an unsupported value. See [Metrics](/docs/metrics) for naming rules.                |
 | 322  | Time Series Data Schema Changed           | The same metric or event log was emitted with a conflicting schema — for example, the same field written with different data types.                                        |
 | 323  | Too Many Webhook Msg Entity               | The processor emitted more webhook messages in one batch than allowed.                                                                                                     |
 | 324  | Subgraph Eth Call With Invalid Param      | An `eth_call` issued by a subgraph handler used invalid parameters — for example, a malformed address or arguments that do not match the ABI.                              |
@@ -97,4 +97,4 @@ Errors caused by the processor itself — its handler code, configuration, or sc
 
 | Code | Name       | Description                                                                                                                                             |
 | :--- | :--------- | :------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| 400  | Over Quota | The project has exceeded the quota of its current plan and processing is paused. Upgrade the plan, or reduce usage (see [Cost Reduction](/guides/best-practices/cost-reduction)). |
+| 400  | Over Quota | The project has exceeded the quota of its current plan and processing is paused. Upgrade the plan, or reduce usage (see [Cost Reduction](/docs/cost-reduction)). |

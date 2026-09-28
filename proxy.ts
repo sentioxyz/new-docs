@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { isMarkdownPreferred, rewritePath } from 'fumadocs-core/negotiation';
 import { docsContentRoute } from '@/lib/shared';
-import legacy from '@/lib/legacy-redirects.json';
 
 /**
  * Docs are served from the site root, so the pattern must start with `{/*path}`.
@@ -32,37 +31,8 @@ function isNonDocPath(pathname: string) {
   );
 }
 
-/**
- * Old ReadMe URLs (/docs/<slug>, /reference/<slug>) -> new pages, using the table
- * built by scripts/generate-redirects.mjs. ReadMe slugs may contain spaces
- * ("development and testing") and API slugs may carry a "-1" suffix.
- */
-function legacyTarget(pathname: string): string | null {
-  const m = pathname.match(/^\/(docs|reference)(?:\/(.*?))?\/?$/);
-  if (!m) return null;
-  const rest = decodeURIComponent(m[2] ?? '');
-
-  if (m[1] === 'docs') {
-    if (!rest) return '/guides/introduction/readme';
-    const key = rest.toLowerCase().replace(/\s+/g, '-');
-    // Unknown slugs fall back to the new path under the site root (/docs/guides/x -> /guides/x)
-    return (legacy.docs as Record<string, string>)[key] ?? `/${rest}`;
-  }
-
-  if (!rest) return '/api';
-  const key = rest.toLowerCase().replace(/-1$/, '');
-  return (legacy.reference as Record<string, string>)[key] ?? '/api';
-}
-
 export default function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
-
-  const target = legacyTarget(pathname);
-  if (target) {
-    const url = request.nextUrl.clone();
-    url.pathname = target;
-    return NextResponse.redirect(url, 301);
-  }
 
   if (isNonDocPath(pathname)) return NextResponse.next();
 

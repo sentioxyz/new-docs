@@ -18,10 +18,32 @@ const docs = defineDocs({
   },
 });
 
+/** content/docs root folder (sidebar tab) -> first URL segment, as on the old ReadMe site */
+const TAB_ROUTES: Record<string, string> = {
+  guides: 'docs',
+  api: 'reference',
+  changelog: 'changelog',
+};
+
+/**
+ * Keep the ReadMe URLs: pages are flat under their tab (/docs/<slug>, /reference/<slug>,
+ * /changelog/<slug>) while the folders only shape the sidebar. A slug is the file name, or
+ * the folder name for a folder's index.mdx / overview.mdx; a tab's index.mdx is the tab root.
+ */
+function readmeSlugs(file: { path: string }): string[] | undefined {
+  const segs = file.path.replace(/\.mdx?$/, '').split('/');
+  const tab = TAB_ROUTES[segs[0]];
+  if (!tab) return;
+  const name = segs[segs.length - 1];
+  if (name !== 'index' && name !== 'overview') return [tab, name];
+  return segs.length === 2 ? [tab] : [tab, segs[segs.length - 2]];
+}
+
 // See https://fumadocs.dev/docs/headless/source-api for more info
 export const source = loader({
   baseUrl: docsRoute,
   source: docs.toFumadocsSource(),
+  slugs: readmeSlugs,
   plugins: [lucideIconsPlugin(), openapiPlugin()],
 });
 

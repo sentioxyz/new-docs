@@ -4,7 +4,7 @@ import { createOpenAPI } from 'fumadocs-openapi/server';
 import { generateFiles } from 'fumadocs-openapi';
 
 // Everything under content/docs/api is generated (and gitignored) except the spec and the
-// hand-written api-access pages; wipe the rest so pages for removed operations don't linger
+// hand-maintained api-access pages; wipe the rest so pages for removed operations don't linger
 const apiDir = './content/docs/api';
 const KEEP = new Set(['openapi.json', 'api-access']);
 for (const entry of fs.readdirSync(apiDir)) {
@@ -13,12 +13,11 @@ for (const entry of fs.readdirSync(apiDir)) {
 
 const openapi = createOpenAPI({ input: ['./content/docs/api/openapi.json'] });
 
-// QuerySQLExecutionDetail -> query-sql-execution-detail, GetPriceV2 -> get-price-v2
-const kebab = (s) =>
-  s
-    .replace(/([a-z0-9])([A-Z])/g, '$1-$2')
-    .replace(/([A-Z]+)([A-Z][a-z])/g, '$1-$2')
-    .toLowerCase();
+// File name = the page's ReadMe slug (/reference/<slug>, see lib/source.ts). Operations added
+// after the ReadMe migration fall back to the lowercased operationId, as ReadMe did.
+const { operations: readmeSlugs } = JSON.parse(
+  fs.readFileSync('./scripts/reference-slugs.json', 'utf8')
+);
 
 await generateFiles({
   input: openapi,
@@ -30,10 +29,11 @@ await generateFiles({
     const m = p.match(/^\/(?:v\d+\/)?(?:api\/v\d+\/)?([^/]+)/);
     return m ? m[1] : 'general';
   },
-  // File name (and URL slug) from the kebab-cased operationId; every operation in the spec has one
+  // Every operation in the spec has an operationId
   name(output) {
     const { path, method } = output.item;
-    return kebab(this.document.paths[path][method].operationId);
+    const id = this.document.paths[path][method].operationId;
+    return readmeSlugs[id] ?? id.toLowerCase();
   },
   meta: true,
 });

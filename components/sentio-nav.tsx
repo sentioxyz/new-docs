@@ -19,8 +19,8 @@ export interface SentioTab {
 }
 
 const TAB_ICONS: Record<string, ReactNode> = {
-  api: <Code2 className="size-4" />,
-  guides: <BookOpen className="size-4" />,
+  reference: <Code2 className="size-4" />,
+  docs: <BookOpen className="size-4" />,
   changelog: <History className="size-4" />,
 };
 
@@ -39,7 +39,7 @@ export function SentioNav({ tabs }: { tabs: SentioTab[] }) {
 
   return (
     <header className="sentio-nav hidden md:flex">
-      <Link href="/guides" aria-label="Sentio" className="shrink-0 pe-2 ps-1">
+      <Link href="/docs" aria-label="Sentio" className="shrink-0 pe-2 ps-1">
         <SentioLogo />
       </Link>
 

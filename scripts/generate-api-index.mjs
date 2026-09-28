@@ -5,7 +5,7 @@
  * 3. Write the API overview page, linking each group to its first endpoint
  *
  * Groups render as static sidebar titles, so no <group>/index.mdx is generated
- * (it would turn /api/<group> into a clickable intermediate route).
+ * (it would turn /reference/<group> into a clickable intermediate route).
  *
  * Usage: node scripts/generate-api-index.mjs
  */
@@ -78,7 +78,8 @@ const firstEndpoint = (g) => {
   const page = (readMeta(gdir).pages || []).find((p) =>
     fs.existsSync(path.join(gdir, `${p}.mdx`))
   );
-  return page ? `/api/${g}/${page}` : null;
+  // Pages are flat under /reference (see lib/source.ts)
+  return page ? `/reference/${page}` : null;
 };
 
 const overview = [
@@ -90,7 +91,7 @@ const overview = [
 
 fs.writeFileSync(
   path.join(apiDir, 'index.mdx'),
-  `---\ntitle: "API Reference"\ndescription: "Complete reference for the Sentio REST API"\n---\n\nBase URL: \`https://api.sentio.xyz\`\n\n${overview}\n`
+  `---\ntitle: "API Reference"\ndescription: "Complete reference for the Sentio REST API"\n---\n\nBase URL: \`https://api.sentio.xyz\`\n\nEvery request needs an API key in the \`api-key\` header, see [Authentication](/reference/authentication).\n\n${overview}\n`
 );
 
 console.log(`Generated API index: 1 overview + ${groups.length + 1} endpoint groups`);

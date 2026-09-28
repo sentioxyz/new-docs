@@ -25,11 +25,11 @@ Metric, event and entity are now under the same data storage (we previous use Pr
 
 # Enhanced Entity and SQL Features
 
-* **Feature**: [SQL based alerts](/guides/use-data/alerts#sql-based-alerts) is added, providing flexible way of define your alerts.
+* **Feature**: [SQL based alerts](/docs/alerts#sql-based-alerts) is added, providing flexible way of define your alerts.
 
   ![](/assets/changelog/cdbe79be3f2ae3fa-image.png)
 
-* **Feature**: flexible [aggregation on Entities](/guides/collect-data/data-outputs/entities#timeseries-and-aggregation) , e.g.  the following code will generate extra `AggA` entity every hour with `aggB` field that is max value of `propA+propB` during the hour, while you just  need to emit `EntityH`. This feature could support intensive workload that is slow to do computation during query time
+* **Feature**: flexible [aggregation on Entities](/docs/entities#timeseries-and-aggregation) , e.g.  the following code will generate extra `AggA` entity every hour with `aggB` field that is max value of `propA+propB` during the hour, while you just  need to emit `EntityH`. This feature could support intensive workload that is slow to do computation during query time
 
 ```graphql
 type EntityH @entity(timeseries: true) {
@@ -50,7 +50,7 @@ type AggA @aggregation(intervals: ["hour"], source: "EntityH") {
 
 There are cases where previously mis-handled data leads to dirty or inconsistent results (for example, a bug that was triggered only during a certain time window).
 
-Starting from SDK 3.x, you can now view the full list of checkpoints maintained by the Sentio Processor and instruct the processor to [roll back](/guides/collect-data/the-monitoring#processor-rollback) to an earlier state. After the rollback, the processor will enter a paused state, allowing you to use [Hotswap](/guides/collect-data/the-monitoring#hotswap-in-version) to fix the indexing logic before resuming execution.
+Starting from SDK 3.x, you can now view the full list of checkpoints maintained by the Sentio Processor and instruct the processor to [roll back](/docs/the-monitoring#processor-rollback) to an earlier state. After the rollback, the processor will enter a paused state, allowing you to use [Hotswap](/docs/the-monitoring#hotswap-in-version) to fix the indexing logic before resuming execution.
 
 ![](/assets/changelog/801494ab7e372126-image.png)
 

@@ -1,4 +1,7 @@
+import fs from 'node:fs';
 import { createMDX } from 'fumadocs-mdx/next';
+
+const referenceSlugs = JSON.parse(fs.readFileSync('./scripts/reference-slugs.json', 'utf8'));
 
 /*
  * fumadocs-mdx compiles macro configs into temporary <outDir>/macro/<hash>.mjs
@@ -22,12 +25,30 @@ const config = {
     : {}),
   // Allows a clean build when the previous output can't be removed
   distDir: process.env.NEXT_DIST_DIR || '.next',
+  /*
+   * Pages are served at their old ReadMe URLs (see lib/source.ts); these cover the ReadMe URLs
+   * that are not pages here, mirroring what docs.sentio.xyz did.
+   */
   async redirects() {
     return [
       // Tab roots open their first page (keep in sync with SENTIO_TABS in lib/shared.ts)
-      { source: '/', destination: '/guides/introduction/readme', permanent: false },
-      { source: '/guides', destination: '/guides/introduction/readme', permanent: false },
-      // Old ReadMe URLs (/docs/*, /reference/*) are redirected in proxy.ts
+      { source: '/', destination: '/docs/readme', permanent: false },
+      { source: '/docs', destination: '/docs/readme', permanent: true },
+      // ReadMe folder pages that were empty, and a folder slug ReadMe kept with spaces
+      { source: '/docs/concepts', destination: '/docs/abi', permanent: true },
+      { source: '/docs/solana-deprecated', destination: '/docs/decode-solana-instructions', permanent: true },
+      { source: '/docs/visualizations', destination: '/docs/dashboard', permanent: true },
+      {
+        source: '/docs/:slug(Development%20and%20Testing|development%20and%20testing)',
+        destination: '/docs/development-and-testing',
+        permanent: true,
+      },
+      // ReadMe API tag pages (/reference/ai, /reference/data, ...) -> their first endpoint
+      ...Object.entries(referenceSlugs.tags).map(([tag, slug]) => ({
+        source: `/reference/${tag}`,
+        destination: `/reference/${slug}`,
+        permanent: false,
+      })),
     ];
   },
 };

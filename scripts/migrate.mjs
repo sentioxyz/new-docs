@@ -455,23 +455,11 @@ fs.writeFileSync(
   ) + '\n'
 );
 
-/* ---------- 7. ReadMeConfig (API access) → api/ ---------- */
+/* ---------- 7. ReadMeConfig (API access) ---------- */
 
-const apiAccessOut = path.join(DOCS_OUT, 'api', 'api-access');
-fs.mkdirSync(apiAccessOut, { recursive: true });
-const apiAccessPages = [];
-for (const f of walk(path.join(SRC, 'reference/ReadMeConfig')).filter((f) => f.endsWith('.md'))) {
-  const { title, description, body } = parseFM(fs.readFileSync(f, 'utf8'));
-  const n = slug(f);
-  const fm = [`title: ${JSON.stringify(title || n)}`];
-  if (description) fm.push(`description: ${JSON.stringify(description)}`);
-  fs.writeFileSync(path.join(apiAccessOut, n + '.mdx'), `---\n${fm.join('\n')}\n---\n${rewrite(body)}`);
-  apiAccessPages.push(n);
-}
-fs.writeFileSync(
-  path.join(apiAccessOut, 'meta.json'),
-  JSON.stringify({ title: 'API Access', pages: apiAccessPages }, null, 2) + '\n'
-);
+// ReadMe's reference/ReadMeConfig pages are empty placeholders whose content ReadMe renders
+// itself (api_config: getting-started / authentication / my-requests), so they are not migrated.
+// content/docs/api/api-access is maintained by hand instead.
 
 /* ---------- 8. Tab meta.json and index pages ---------- */
 
@@ -523,7 +511,9 @@ function writeDirIndex(dir, relRoot) {
   const items = (meta.pages || [])
     .map((p) => {
       const child = path.join(dir, p);
-      const href = (leaf) => `/${[rel, p, leaf].filter(Boolean).join('/')}`;
+      // Flat ReadMe URL: /<tab route>/<page or folder name> (see lib/source.ts)
+      const href = (leaf) =>
+        `/${{ guides: 'docs' }[rel] ?? rel}/${[p, leaf].filter(Boolean).join('/').split('/').pop()}`;
       if (fs.existsSync(child) && fs.statSync(child).isDirectory()) {
         const sub = JSON.parse(fs.readFileSync(path.join(child, 'meta.json'), 'utf8'));
         const leaf = firstLeaf(child);
@@ -595,10 +585,11 @@ for (const f of walk(DOCS_OUT).filter(
   const rel = path.relative(DOCS_OUT, f).replace(/\\/g, '/').replace(/\.mdx$/, '');
   const segs = rel.split('/');
   const base = segs.pop();
-  // An index page's URL is the directory itself, not .../index
-  const url = `/${base === 'index' ? segs.join('/') : rel}`;
-  const key = base === 'index' ? segs[segs.length - 1] : base;
+  // A folder's index page takes the folder name; a tab's own index.mdx is not a ReadMe page
+  const key = base === 'index' ? (segs.length > 1 ? segs[segs.length - 1] : '') : base;
   if (!key) continue;
+  // Pages are flat under their tab, keeping the ReadMe URLs (see lib/source.ts)
+  const url = `/${{ guides: 'docs', changelog: 'changelog' }[segs[0]]}/${key}`;
   addSlug(key, url);
   // ReadMe slugs often differ from file names in singular/plural
   addSlug(key.replace(/s$/, ''), url);
@@ -630,5 +621,5 @@ console.log(
   `doc: links converted: ${linkFixed}${linkMissed ? `, ${linkMissed} unresolved (${[...missed].join(', ')})` : ''}`
 );
 
-console.log('Tabs: api (API Reference) / guides (Guides) / changelog (Changelog)');
+console.log('Tabs: api -> /reference (API Reference) / guides -> /docs (Guides) / changelog (Changelog)');
 console.log('Migration complete');

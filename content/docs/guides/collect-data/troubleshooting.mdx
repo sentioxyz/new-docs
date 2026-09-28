@@ -12,12 +12,12 @@ Processors can stop due to various errors. Refer to this list for common causes 
 ### **Quota Exceeded:**
    * **Symptom:** Processor stops with a "Quota exceeded" message.
    * **Cause:** Exceeded resource limits of your Sentio plan.
-   * **Solution:** Upgrade plan or optimize processor (see `Performance Tuning` below and [Cost Reduction](/guides/best-practices/cost-reduction) best practice).
+   * **Solution:** Upgrade plan or optimize processor (see `Performance Tuning` below and [Cost Reduction](/docs/cost-reduction) best practice).
 
 ### **Time Series Exceeds Limit (High Cardinality):**
    * **Symptom:** Error related to too many time series (\~10k limit per metric).
    * **Cause:** Using high-cardinality labels (addresses, hashes) in metrics.
-   * **Solution:** Use Event Logs or Entities for high-cardinality data. (See [Avoiding High Cardinality](/guides/best-practices/avoid-high-cardinality)).
+   * **Solution:** Use Event Logs or Entities for high-cardinality data. (See [Avoiding High Cardinality](/docs/avoid-high-cardinality)).
 
 ### **Invalid Label/Metric Name:**
    * **Symptom:** Error about invalid names.

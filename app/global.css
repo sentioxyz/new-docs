@@ -613,7 +613,7 @@ body::after {
 }
 
 /* The logo is already in the top nav */
-#nd-sidebar a[href='/guides'] {
+#nd-sidebar a[href='/docs'] {
   display: none;
 }
 
@@ -805,7 +805,9 @@ body::after {
   background-color: var(--s-surface);
 }
 
-.prose :not(pre) > code {
+/* Skip `not-prose` subtrees (e.g. the OpenAPI playground), like @tailwindcss/typography does:
+   they style their own <code>, and these pills would split its path into one box per segment */
+.prose :not(pre) > code:not(.not-prose, .not-prose *) {
   background-color: var(--s-inline-code-bg);
   border: 1px solid var(--s-inline-code-border);
   border-radius: 0.375rem;

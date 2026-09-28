@@ -28,4 +28,4 @@ Sentio's pricing may depend on factors like data points ingested, compute time, 
 
 *   Using labels with a vast number of unique values (e.g., wallet addresses, transaction hashes) in Metrics can drastically increase the number of time series stored, leading to higher costs and potential performance issues or errors (limits are often around 10k unique series per metric).
 *   **Recommendation:** For high-cardinality identifiers, use Event Logs (adding the identifier as an attribute) or Entities (using the identifier as an entity ID or field) instead of metric labels.
-    *(See [Avoiding High Cardinality](/guides/best-practices/avoid-high-cardinality))* 
+    *(See [Avoiding High Cardinality](/docs/avoid-high-cardinality))* 

@@ -1,8 +1,8 @@
 /**
  * Migrates the ReadMe changelog posts into content/docs/changelog.
  * ReadMe serves each post's markdown at /changelog/<slug>.md; images are downloaded to
- * public/assets/changelog and links to old ReadMe pages are rewritten using
- * lib/legacy-redirects.json (run generate-redirects.mjs first).
+ * public/assets/changelog and absolute links to old ReadMe pages become site-relative
+ * (pages keep their ReadMe URLs, see lib/source.ts).
  *
  * ReadMe has no real publish dates (every post has the same import timestamp), so the
  * order in meta.json is the order below, newest first.
@@ -24,7 +24,6 @@ const LOCAL_POSTS = { '2025-11-timeseries-refactor': 'sentio-sdk-40-released' };
 
 const OUT = path.join(process.cwd(), 'content/docs/changelog');
 const ASSETS = path.join(process.cwd(), 'public/assets/changelog');
-const legacy = JSON.parse(fs.readFileSync(path.join(process.cwd(), 'lib/legacy-redirects.json'), 'utf8'));
 
 async function fetchText(url) {
   const res = await fetch(url);
@@ -53,8 +52,7 @@ function rewriteUrl(url) {
   const hash = frag ? `#${frag}` : '';
   let to = null;
   let d;
-  if ((d = p.match(/^\/docs\/([^/]+)$/))) to = legacy.docs[d[1].toLowerCase()];
-  else if ((d = p.match(/^\/reference\/([^/]+)$/))) to = legacy.reference[d[1].toLowerCase().replace(/-1$/, '')];
+  if (/^\/(docs|reference)\/[^/]+$/.test(p)) to = p;
   else if ((d = p.match(/^\/(?:update\/)?changelog\/([^/]+)$/))) to = `/changelog/${d[1]}`;
   if (!to) {
     console.warn(`  ! unresolved link, kept as is: ${url}`);
