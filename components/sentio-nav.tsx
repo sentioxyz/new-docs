@@ -10,7 +10,7 @@ import {
   Package,
 } from 'lucide-react';
 import type { ReactNode } from 'react';
-import { SentioLogo } from '@/components/sentio-logo';
+import { SentioHomeLink } from '@/components/sentio-home-link';
 import { SentioThemeSwitch } from '@/components/sentio-theme-switch';
 
 export interface SentioTab {
@@ -38,9 +38,7 @@ export function SentioNav({ tabs }: { tabs: SentioTab[] }) {
 
   return (
     <header className="sentio-nav hidden md:flex">
-      <Link href="/readme" aria-label="Sentio" className="shrink-0 pe-2 ps-1">
-        <SentioLogo />
-      </Link>
+      <SentioHomeLink className="shrink-0 pe-2 ps-1" />
 
       <nav className="sentio-nav-tabs ms-2">
         {tabs.map((tab) => {
