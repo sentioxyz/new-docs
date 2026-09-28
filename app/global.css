@@ -624,7 +624,7 @@ body::after {
 }
 
 /* The logo is already in the top nav */
-#nd-sidebar a[href='/docs'] {
+#nd-sidebar a:has(> .sentio-logo) {
   display: none;
 }
 

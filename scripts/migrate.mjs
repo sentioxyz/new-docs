@@ -511,9 +511,9 @@ function writeDirIndex(dir, relRoot) {
   const items = (meta.pages || [])
     .map((p) => {
       const child = path.join(dir, p);
-      // Flat ReadMe URL: /<tab route>/<page or folder name> (see lib/source.ts)
-      const href = (leaf) =>
-        `/${{ guides: 'docs' }[rel] ?? rel}/${[p, leaf].filter(Boolean).join('/').split('/').pop()}`;
+      // Flat URL: /<tab route>/<page or folder name>; Guides has no tab route (see lib/source.ts)
+      const tab = rel === 'guides' ? '' : `/${rel}`;
+      const href = (leaf) => `${tab}/${[p, leaf].filter(Boolean).join('/').split('/').pop()}`;
       if (fs.existsSync(child) && fs.statSync(child).isDirectory()) {
         const sub = JSON.parse(fs.readFileSync(path.join(child, 'meta.json'), 'utf8'));
         const leaf = firstLeaf(child);
@@ -588,8 +588,8 @@ for (const f of walk(DOCS_OUT).filter(
   // A folder's index page takes the folder name; a tab's own index.mdx is not a ReadMe page
   const key = base === 'index' ? (segs.length > 1 ? segs[segs.length - 1] : '') : base;
   if (!key) continue;
-  // Pages are flat under their tab, keeping the ReadMe URLs (see lib/source.ts)
-  const url = `/${{ guides: 'docs', changelog: 'changelog' }[segs[0]]}/${key}`;
+  // Pages are flat under their tab, keeping the ReadMe slugs; Guides sit at the root (see lib/source.ts)
+  const url = `${{ guides: '', changelog: '/changelog' }[segs[0]]}/${key}`;
   addSlug(key, url);
   // ReadMe slugs often differ from file names in singular/plural
   addSlug(key.replace(/s$/, ''), url);
@@ -621,5 +621,5 @@ console.log(
   `doc: links converted: ${linkFixed}${linkMissed ? `, ${linkMissed} unresolved (${[...missed].join(', ')})` : ''}`
 );
 
-console.log('Tabs: api -> /reference (API Reference) / guides -> /docs (Guides) / changelog (Changelog)');
+console.log('Tabs: api -> /reference (API Reference) / guides -> / (Guides) / changelog (Changelog)');
 console.log('Migration complete');

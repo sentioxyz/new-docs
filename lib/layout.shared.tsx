@@ -5,8 +5,8 @@ export function baseOptions(): BaseLayoutProps {
   return {
     nav: {
       title: <SentioLogo />,
-      // Redirects to the first Guides page; global.css hides this link in the sidebar by its href
-      url: '/docs',
+      // The first Guides page (`/` would redirect there); global.css hides this link in the sidebar
+      url: '/readme',
     },
     /*
      * Enabled for the mobile drawer. Desktop uses the top nav, and the copy

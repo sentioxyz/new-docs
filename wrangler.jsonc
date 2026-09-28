@@ -1,5 +1,10 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
+  /*
+   * The site is mounted at <website>/docs (Next.js basePath, lib/base-path.mjs). Worker
+   * routes on /docs take precedence over the website origin, so only those paths reach here.
+   * The top level is the test environment; `--env production` deploys the production Worker.
+   */
   "name": "test-docs",
   "main": ".open-next/worker.js",
   "compatibility_date": "2026-09-23",
@@ -8,6 +13,11 @@
     "directory": ".open-next/assets",
     "binding": "ASSETS"
   },
+  "workers_dev": true,
+  "routes": [
+    { "pattern": "website-test.sentio.xyz/docs", "zone_name": "sentio.xyz" },
+    { "pattern": "website-test.sentio.xyz/docs/*", "zone_name": "sentio.xyz" }
+  ],
   "services": [
     {
       // Must match "name" above
@@ -21,5 +31,26 @@
   },
   "observability": {
     "enabled": true
+  },
+  "env": {
+    "production": {
+      "name": "sentio-docs",
+      "workers_dev": false,
+      "routes": [
+        { "pattern": "www.sentio.xyz/docs", "zone_name": "sentio.xyz" },
+        { "pattern": "www.sentio.xyz/docs/*", "zone_name": "sentio.xyz" }
+      ],
+      // Bindings are not inherited from the top level
+      "services": [
+        {
+          // Must match "name" above
+          "binding": "WORKER_SELF_REFERENCE",
+          "service": "sentio-docs"
+        }
+      ],
+      "images": {
+        "binding": "IMAGES"
+      }
+    }
   }
 }

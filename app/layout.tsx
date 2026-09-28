@@ -5,7 +5,7 @@ import localFont from 'next/font/local';
 import { DocsLayout } from 'fumadocs-ui/layouts/docs';
 import { source } from '@/lib/source';
 import { baseOptions } from '@/lib/layout.shared';
-import { SENTIO_TABS } from '@/lib/shared';
+import { basePath, SENTIO_TABS } from '@/lib/shared';
 import { SentioNav } from '@/components/sentio-nav';
 import { SentioSidebarGroup } from '@/components/sentio-sidebar-group';
 import { SentioThemeSwitch } from '@/components/sentio-theme-switch';
@@ -34,8 +34,9 @@ const robotoMono = localFont({
 });
 
 export const metadata: Metadata = {
+  // Website origin, set per environment at build time (see .github/workflows/deploy.yml)
   metadataBase: new URL(
-    process.env.NEXT_PUBLIC_SITE_URL ?? 'https://docs.sentio.xyz',
+    `${process.env.NEXT_PUBLIC_SITE_URL ?? 'https://www.sentio.xyz'}${basePath}/`,
   ),
   title: {
     default: 'Sentio Docs',
@@ -44,7 +45,7 @@ export const metadata: Metadata = {
   description:
     'Developer-First, AI-Powered Modular Web3 Data Infrastructure. Documentation for the Sentio decentralized data and compute network.',
   icons: {
-    icon: '/brand/favicon.ico',
+    icon: `${basePath}/brand/favicon.ico`,
   },
 };
 
@@ -76,10 +77,11 @@ export default function Layout({ children }: { children: ReactNode }) {
             defaultTheme: 'system',
             enableSystem: true,
           }}
-          search={{ enabled: true }}
+          // The search dialog fetches its API directly, so it needs basePath
+          search={{ enabled: true, options: { api: `${basePath}/api/search` } }}
         >
           <SentioNav tabs={[...SENTIO_TABS]} />
-          {/* Docs are served from the site root, so DocsLayout lives in the root layout */}
+          {/* Docs are served from the basePath root, so DocsLayout lives in the root layout */}
           <DocsLayout
             tree={source.getPageTree()}
             {...baseOptions()}
