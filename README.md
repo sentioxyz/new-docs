@@ -41,7 +41,7 @@ node scripts/migrate-changelog.mjs       # changelog posts from docs.sentio.xyz
 ```
 
 The API Reference pages under `content/docs/api` are build output, not source: only
-`openapi.json` and the hand-written `api-access/` pages are committed. `npm run gen:api`
+`openapi.json` and the hand-maintained `api-access/` pages are committed. `npm run gen:api`
 (`generate-api.mjs` + `generate-api-index.mjs`) wipes and regenerates the rest, and runs
 automatically before `dev`, `build` and `types:check`. To change an endpoint page, update
 `openapi.json` (or the scripts), never the generated `.mdx`.

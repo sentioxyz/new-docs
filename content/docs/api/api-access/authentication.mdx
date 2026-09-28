@@ -1,4 +1,37 @@
 ---
 title: "Authentication"
-description: "Set up the welcome page for your API to help users make their first call."
+description: "Authenticate Sentio REST API requests with an API key."
 ---
+
+Every request to the Sentio API at `https://api.sentio.xyz` is authenticated with an API key.
+
+## Get an API key
+
+Create a key on the [API keys](https://app.sentio.xyz/profile/apikeys) page of your profile. See [API Key](/guides/admin/api-key) for a walkthrough.
+
+<Callout>
+  To call the API on behalf of an organization, switch your account to that organization before creating the key.
+</Callout>
+
+## Send the key
+
+Pass the key in the `api-key` request header:
+
+```bash
+curl -X POST 'https://api.sentio.xyz/v1/analytics/<owner>/<slug>/sql/execute' \
+  -H 'api-key: <your api key>' \
+  -H 'Content-Type: application/json' \
+  -d '{"sqlQuery": {"sql": "SELECT count(*) FROM `Transfer`"}}'
+```
+
+If you cannot set headers, pass it as the `api-key` query parameter instead:
+
+```bash
+curl 'https://api.sentio.xyz/v1/dashboards?ownerName=<owner>&slug=<slug>&api-key=<your api key>'
+```
+
+Prefer the header: query strings tend to end up in logs and browser history.
+
+<Callout type="warn">
+  An API key acts with your account's permissions. Keep it secret, and never commit it or ship it in client-side code.
+</Callout>
