@@ -14,6 +14,7 @@ import {
 import { flushSync } from 'react-dom';
 import { MessageCircleIcon, RefreshCw, X } from 'lucide-react';
 import { cn } from '@/lib/cn';
+import { basePath } from '@/lib/base-path.mjs';
 import { buttonVariants } from '@/components/ui/button';
 import { useChat, type UseChatHelpers } from '@ai-sdk/react';
 import { DefaultChatTransport, type UIMessage } from 'ai';
@@ -165,8 +166,8 @@ export function AISearch({ children }: { children: ReactNode }) {
   const chat = useChat<ChatUIMessage>({
     id: 'search',
     transport: new DefaultChatTransport({
-      // Our own proxy (lib/ask-ai.ts), which holds the AgentConnect key
-      api: '/api/chat',
+      // Our own proxy (lib/ask-ai.ts), which holds the AgentConnect key; fetch is not basePath-aware
+      api: `${basePath}/api/chat`,
       headers: () => ({ [TAB_HEADER]: getTabId() }),
     }),
   });

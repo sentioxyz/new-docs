@@ -1,4 +1,5 @@
 import { getCloudflareContext } from '@opennextjs/cloudflare';
+import { basePath } from './base-path.mjs';
 
 /*
  * Ask AI proxy to an AgentConnect agent (Agent chat API).
@@ -103,7 +104,7 @@ function describe(status: number): string {
 
 function errorResponse(status: number, message = describe(status)) {
   // Collapse internal failures (bad key, unknown agent, ...) into a 502
-  const out = [404, 409, 413, 429, 503].includes(status) ? status : 502;
+  const out = [400, 404, 409, 413, 429, 503].includes(status) ? status : 502;
   return new Response(message, {
     status: out,
     headers: { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'no-store' },
@@ -216,7 +217,7 @@ export async function handleChat(req: Request): Promise<Response> {
     return errorResponse(502);
   }
 
-  const cookie = `${cookieName}=${conversationId}; Path=/api/chat; HttpOnly; Secure; SameSite=Lax`;
+  const cookie = `${cookieName}=${conversationId}; Path=${basePath}/api/chat; HttpOnly; Secure; SameSite=Lax`;
   if (!upstream.ok) {
     console.error(`[ask-ai] relay responded ${upstream.status}`);
     // The token may be stale for this conversation; mint a fresh one next time

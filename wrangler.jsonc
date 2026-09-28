@@ -58,7 +58,15 @@
       ],
       "images": {
         "binding": "IMAGES"
-      }
+      },
+      // Separate namespace so test and production traffic are counted apart
+      "ratelimits": [
+        {
+          "name": "ASK_AI_RATE_LIMITER",
+          "namespace_id": "1002",
+          "simple": { "limit": 10, "period": 60 }
+        }
+      ]
     }
   }
 }
