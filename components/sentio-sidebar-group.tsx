@@ -21,10 +21,10 @@ function indentOf(depth: number) {
  * Sidebar folder renderer.
  *
  * - Top-level folders (e.g. "Introduction") render as static, always-expanded
- *   group titles. collapsible={false} makes fumadocs render the title as a
+ *   group titles, unless meta.json sets `collapsible` (the API Reference tags). collapsible={false} makes fumadocs render the title as a
  *   <div> instead of a <button>/<a>. A folder with an index page (e.g. the API
  *   Reference "Data" tag) gets a title that links to it instead.
- * - Nested folders (e.g. "Sentio Network") are collapsible and start closed,
+ * - Nested and collapsible folders (e.g. "Sentio Network") start closed,
  *   unless the current page is inside them or meta.json sets `defaultOpen`.
  */
 export function SentioSidebarGroup({
@@ -39,7 +39,7 @@ export function SentioSidebarGroup({
   const path = useTreePath();
   const pathname = usePathname();
 
-  if (depth === 0) {
+  if (depth === 0 && !item.collapsible) {
     const titleStyle = { paddingInlineStart: indentOf(depth) };
     return (
       <SidebarFolder collapsible={false} className="sentio-sidebar-group">
@@ -95,3 +95,4 @@ export function SentioSidebarGroup({
     </SidebarFolder>
   );
 }
+

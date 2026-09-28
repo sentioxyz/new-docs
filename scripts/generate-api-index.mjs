@@ -4,8 +4,8 @@
  * 2. Write the final content/docs/api/meta.json (root folder → top tab), tags in ReadMe's order
  * 3. Write the API overview page, linking each tag to its intro page or first endpoint
  *
- * A tag folder with a hand-maintained index.mdx opens it at /reference/<tag>, like a Guides
- * folder; tags without one render as static sidebar titles.
+ * Tag folders are collapsible, like nested Guides folders.
+ * A tag folder with a hand-maintained index.mdx opens it at /reference/<tag>.
  *
  * Usage: node scripts/generate-api-index.mjs
  */
@@ -22,7 +22,7 @@ const writeMeta = (dir, meta) =>
 
 // Tag slug (folder name, see generate-api.mjs) -> OpenAPI tag name
 const spec = JSON.parse(fs.readFileSync(path.join(apiDir, 'openapi.json'), 'utf8'));
-const TAG_TITLES = { 'api-access': 'API Access', price: 'Price', general: 'General' };
+const TAG_TITLES = { price: 'Price', general: 'General' };
 for (const item of Object.values(spec.paths))
   for (const op of Object.values(item))
     for (const tag of op.tags ?? []) TAG_TITLES[tag.toLowerCase().replace(/\s+/g, '-')] = tag;
@@ -36,20 +36,21 @@ const rank = (g) => {
   return i === -1 ? Infinity : i;
 };
 
-// Tag folders from generate-api.mjs; api-access may already be listed
+// Tag folders from generate-api.mjs; api-access (Authentication) is listed separately
 const groups = readMeta(apiDir)
-  .pages.filter((g) => g !== 'api-access' && fs.existsSync(path.join(apiDir, g, 'meta.json')))
+  .pages.filter((g) => !g.includes('api-access') && fs.existsSync(path.join(apiDir, g, 'meta.json')))
   .sort((a, b) => rank(a) - rank(b) || a.localeCompare(b));
 const hasIntro = (g) => fs.existsSync(path.join(apiDir, g, 'index.mdx'));
 
 /* ---------- Tag folder meta.json titles ---------- */
 
-for (const g of [...groups, 'api-access']) {
+for (const g of groups) {
   const gdir = path.join(apiDir, g);
-  if (!fs.existsSync(gdir)) continue;
   const meta = readMeta(gdir);
   const title = TAG_TITLES[g] || meta.title || g;
-  if (meta.title !== title) writeMeta(gdir, { ...meta, title });
+  // Tag folders collapse like nested Guides folders
+  if (meta.title !== title || !meta.collapsible)
+    writeMeta(gdir, { ...meta, title, collapsible: true });
 }
 
 /* ---------- api/meta.json ---------- */
@@ -60,7 +61,8 @@ writeMeta(apiDir, {
   root: true,
   // Root folders get no index node by default; without it the sidebar misbehaves on the tab root
   pagesIndex: 'index',
-  pages: ['api-access', ...groups],
+  // "...api-access" lists its pages (Authentication) at the top level, without a folder
+  pages: ['...api-access', ...groups],
 });
 
 /* ---------- API overview page ---------- */
@@ -76,7 +78,7 @@ const firstEndpoint = (g) => {
 };
 
 const overview = [
-  `- [API Access](${firstEndpoint('api-access')})`,
+  `- [Authentication](/reference/authentication)`,
   ...groups.map(
     (g) => `- [${TAG_TITLES[g] || g}](${hasIntro(g) ? `/reference/${g}` : firstEndpoint(g)})`
   ),
