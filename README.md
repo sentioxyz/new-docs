@@ -67,7 +67,8 @@ Workers static assets are limited to 25 MiB per file, so keep files in `public/`
 
 - `fumadocs-openapi` (pinned to an exact version so the patch keeps applying): the API
   playground shows the endpoint path as one string, with `{params}` highlighted and a
-  copy-path button. When upgrading it, re-apply the change in `dist/ui/playground/client.js`
+  Copy URL button (server URL + path, with the path/query params filled in the form; unfilled
+  path params stay `{placeholders}`, API keys are never included). When upgrading it, re-apply the change in `dist/ui/playground/client.js`
   and run `npx patch-package fumadocs-openapi`.
 
 ### Fumadocs MDX

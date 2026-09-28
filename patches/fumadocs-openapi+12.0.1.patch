@@ -1,5 +1,5 @@
 diff --git a/node_modules/fumadocs-openapi/dist/ui/playground/client.js b/node_modules/fumadocs-openapi/dist/ui/playground/client.js
-index d9b4fab..9efcf05 100644
+index d9b4fab..0ec0b70 100644
 --- a/node_modules/fumadocs-openapi/dist/ui/playground/client.js
 +++ b/node_modules/fumadocs-openapi/dist/ui/playground/client.js
 @@ -23,7 +23,8 @@ import { StfProvider, useDataEngine, useFieldValue, useListener, useStf } from "
@@ -12,13 +12,54 @@ index d9b4fab..9efcf05 100644
  import { buttonVariants } from "fumadocs-ui/components/ui/button";
  //#region src/ui/playground/client.tsx
  const OptionsContext = createContext({});
-@@ -393,19 +394,29 @@ function OAuth2Input({ field }) {
+@@ -70,6 +71,8 @@ function PlaygroundClient({ writeOnly, readOnly, transformAuthInputs, fetchOptio
+ 			cookie: requestData?.cookie ?? {}
+ 		};
+ 	}, [examples, exampleId]);
++	// the form engine mutates defaultValues in place, so snapshot the example path params
++	const initialPath = useMemo(() => structuredClone(defaultValues.path), [defaultValues]);
+ 	const stf = useStf({ defaultValues });
+ 	const auth = useAuthFields(stf.dataEngine, {
+ 		operation,
+@@ -87,6 +90,21 @@ function PlaygroundClient({ writeOnly, readOnly, transformAuthInputs, fetchOptio
+ 		}, mediaAdapters, parameters);
+ 		return fetcher.fetch(resolveUrl(pathnameFromRequest(route, encoded)), encoded);
+ 	});
++	const getCopyUrl = () => {
++		const data = stf.dataEngine.getData();
++		// path params still empty or at the generated example value (e.g. "string") stay {placeholders}
++		const path = {};
++		for (const key in data.path) if (data.path[key] != null && data.path[key] !== "" && data.path[key] !== initialPath[key]) path[key] = encodeURIComponent(String(data.path[key]));
++		const encoded = encodeRequestData({
++			...data,
++			path,
++			method,
++			bodyMediaType: body?.mediaType
++		}, mediaAdapters, parameters);
++		// never put API keys in a copied URL
++		for (const scheme of Object.values(dereferenced.components?.securitySchemes ?? {})) if (scheme.in === "query") delete encoded.query[scheme.name];
++		return resolveUrl(pathnameFromRequest(route, encoded));
++	};
+ 	const timerRef = useRef(null);
+ 	const stfSync = useRef(false);
+ 	function triggerExampleUpdate() {
+@@ -141,6 +159,7 @@ function PlaygroundClient({ writeOnly, readOnly, transformAuthInputs, fetchOptio
+ 								/* @__PURE__ */ jsx(MethodLabel, { children: method }),
+ 								/* @__PURE__ */ jsx(Route, {
+ 									route,
++									getCopyUrl,
+ 									className: cn("flex-1", operation.deprecated && "line-through")
+ 								}),
+ 								/* @__PURE__ */ jsx("button", {
+@@ -392,20 +411,30 @@ function OAuth2Input({ field }) {
+ 		})]
  	});
  }
- function Route({ route, ...props }) {
+-function Route({ route, ...props }) {
 -	return /* @__PURE__ */ jsx("div", {
++function Route({ route, getCopyUrl, ...props }) {
 +	const [isChecked, onCopy] = useCopyButton(() => {
-+		navigator.clipboard.writeText(route);
++		navigator.clipboard.writeText(getCopyUrl ? getCopyUrl() : route);
 +	});
 +	return /* @__PURE__ */ jsxs("div", {
  		...props,
@@ -42,8 +83,8 @@ index d9b4fab..9efcf05 100644
 +			}, index) : part)
 +		}), /* @__PURE__ */ jsx("button", {
 +			type: "button",
-+			"aria-label": "Copy path",
-+			title: "Copy path",
++			"aria-label": "Copy URL",
++			title: "Copy URL",
 +			onClick: onCopy,
 +			className: cn(buttonVariants({
 +				variant: "ghost",
