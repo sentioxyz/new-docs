@@ -1,11 +1,11 @@
 /**
  * Final step for the API Reference tab; must run last.
- * 1. Give each endpoint group a readable meta.json title
- * 2. Write the final content/docs/api/meta.json (root folder → top tab)
- * 3. Write the API overview page, linking each group to its first endpoint
+ * 1. Title each tag folder with its OpenAPI tag name
+ * 2. Write the final content/docs/api/meta.json (root folder → top tab), tags in ReadMe's order
+ * 3. Write the API overview page, linking each tag to its intro page or first endpoint
  *
- * Groups render as static sidebar titles, so no <group>/index.mdx is generated
- * (it would turn /reference/<group> into a clickable intermediate route).
+ * A tag folder with a hand-maintained index.mdx opens it at /reference/<tag>, like a Guides
+ * folder; tags without one render as static sidebar titles.
  *
  * Usage: node scripts/generate-api-index.mjs
  */
@@ -19,46 +19,36 @@ const writeMeta = (dir, meta) =>
     path.join(dir, 'meta.json'),
     JSON.stringify(meta, null, 2) + '\n'
   );
-const titleOf = (file) => {
-  if (!fs.existsSync(file)) return null;
-  const m = fs.readFileSync(file, 'utf8').match(/^title:\s*(.+)$/m);
-  return m ? m[1].trim().replace(/^["']|["']$/g, '') : null;
-};
 
-/** Display titles for endpoint groups (OpenAPI tags are lowercase slugs) */
-const GROUP_TITLES = {
-  'api-access': 'API Access',
-  ai: 'AI',
-  alerts: 'Alerts',
-  analytics: 'Analytics',
-  dashboards: 'Dashboards',
-  eventlogs: 'Event Logs',
-  insights: 'Insights',
-  metrics: 'Metrics',
-  move: 'Move',
-  prices: 'Prices',
-  processors: 'Processors',
-  projects: 'Projects',
-  solidity: 'Solidity',
-  sql: 'SQL',
-  users: 'Users',
-};
+// Tag slug (folder name, see generate-api.mjs) -> OpenAPI tag name
+const spec = JSON.parse(fs.readFileSync(path.join(apiDir, 'openapi.json'), 'utf8'));
+const TAG_TITLES = { 'api-access': 'API Access', price: 'Price', general: 'General' };
+for (const item of Object.values(spec.paths))
+  for (const op of Object.values(item))
+    for (const tag of op.tags ?? []) TAG_TITLES[tag.toLowerCase().replace(/\s+/g, '-')] = tag;
 
-// Hand-maintained folders, listed before the endpoint groups (they keep their own meta.json title)
-const HAND = ['api-access', 'guides'];
-
-// Endpoint groups from generate-api.mjs; the hand-maintained folders may already be listed
-const groups = readMeta(apiDir).pages.filter(
-  (g) => !HAND.includes(g) && fs.existsSync(path.join(apiDir, g, 'meta.json'))
+// ReadMe's tag order (its _order.yaml, as extracted to reference-slugs.json); new tags go last
+const { tags: readmeTags } = JSON.parse(
+  fs.readFileSync(path.join(process.cwd(), 'scripts/reference-slugs.json'), 'utf8')
 );
+const rank = (g) => {
+  const i = Object.keys(readmeTags).indexOf(g);
+  return i === -1 ? Infinity : i;
+};
 
-/* ---------- Group meta.json titles ---------- */
+// Tag folders from generate-api.mjs; api-access may already be listed
+const groups = readMeta(apiDir)
+  .pages.filter((g) => g !== 'api-access' && fs.existsSync(path.join(apiDir, g, 'meta.json')))
+  .sort((a, b) => rank(a) - rank(b) || a.localeCompare(b));
+const hasIntro = (g) => fs.existsSync(path.join(apiDir, g, 'index.mdx'));
+
+/* ---------- Tag folder meta.json titles ---------- */
 
 for (const g of [...groups, 'api-access']) {
   const gdir = path.join(apiDir, g);
   if (!fs.existsSync(gdir)) continue;
   const meta = readMeta(gdir);
-  const title = GROUP_TITLES[g] || meta.title || g;
+  const title = TAG_TITLES[g] || meta.title || g;
   if (meta.title !== title) writeMeta(gdir, { ...meta, title });
 }
 
@@ -70,7 +60,7 @@ writeMeta(apiDir, {
   root: true,
   // Root folders get no index node by default; without it the sidebar misbehaves on the tab root
   pagesIndex: 'index',
-  pages: [...HAND, ...groups],
+  pages: ['api-access', ...groups],
 });
 
 /* ---------- API overview page ---------- */
@@ -85,14 +75,11 @@ const firstEndpoint = (g) => {
   return page ? `/reference/${page}` : null;
 };
 
-const guides = readMeta(path.join(apiDir, 'guides'))
-  .pages.map((p) => `[${titleOf(path.join(apiDir, 'guides', `${p}.mdx`))}](/reference/${p})`)
-  .join(', ');
-
 const overview = [
   `- [API Access](${firstEndpoint('api-access')})`,
-  `- Guides: ${guides}`,
-  ...groups.map((g) => `- [${GROUP_TITLES[g] || g}](${firstEndpoint(g)})`),
+  ...groups.map(
+    (g) => `- [${TAG_TITLES[g] || g}](${hasIntro(g) ? `/reference/${g}` : firstEndpoint(g)})`
+  ),
 ]
   .filter((l) => !l.includes('(null)'))
   .join('\n');
@@ -102,4 +89,4 @@ fs.writeFileSync(
   `---\ntitle: "API Reference"\ndescription: "Complete reference for the Sentio REST API"\n---\n\nBase URL: \`https://api.sentio.xyz\`\n\nEvery request needs an API key in the \`api-key\` header, see [Authentication](/reference/authentication).\n\n${overview}\n`
 );
 
-console.log(`Generated API index: 1 overview + ${groups.length + 1} endpoint groups`);
+console.log(`Generated API index: 1 overview + ${groups.length + 1} tag folders`);
