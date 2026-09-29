@@ -1,15 +1,16 @@
-name: Deploy
+name: Deploy (test)
 
-# Builds the site with OpenNext and deploys it to the `test-docs` Cloudflare Worker
-# (see wrangler.jsonc) on every push to main.
+# Builds the site with OpenNext and deploys it to the test Worker `test-docs`
+# (top level of wrangler.jsonc), served at website-test.sentio.xyz/docs, on every push to main.
+# Production is released manually by deploy-production.yml.
 on:
   push:
     branches: [main]
   workflow_dispatch:
 
-# Never run two deploys at once; a newer push cancels the one still running
+# Never run two test deploys at once; a newer push cancels the one still running
 concurrency:
-  group: deploy
+  group: deploy-test
   cancel-in-progress: true
 
 permissions:
@@ -19,6 +20,9 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    environment:
+      name: test
+      url: https://website-test.sentio.xyz/docs
     steps:
       - uses: actions/checkout@v7
 
@@ -32,5 +36,7 @@ jobs:
       - name: Build and deploy
         run: npm run deploy
         env:
+          # Inlined at build time (metadataBase, OG image URLs)
+          NEXT_PUBLIC_SITE_URL: https://website-test.sentio.xyz
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

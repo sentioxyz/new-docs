@@ -10,17 +10,19 @@ import {
   Package,
 } from 'lucide-react';
 import type { ReactNode } from 'react';
-import { SentioLogo } from '@/components/sentio-logo';
+import { SentioHomeLink } from '@/components/sentio-home-link';
 import { SentioThemeSwitch } from '@/components/sentio-theme-switch';
 
 export interface SentioTab {
   title: string;
   url: string;
+  /** First URL segment of the tab's pages; '' for Guides, which sits at the root */
+  segment?: string;
 }
 
 const TAB_ICONS: Record<string, ReactNode> = {
   reference: <Code2 className="size-4" />,
-  docs: <BookOpen className="size-4" />,
+  '': <BookOpen className="size-4" />,
   changelog: <History className="size-4" />,
 };
 
@@ -28,20 +30,15 @@ function isExternal(url: string) {
   return /^\w+:/.test(url) || url.startsWith('//');
 }
 
-function segmentOf(url: string) {
-  // Docs are served from the site root, so the tab is the first path segment
-  return url.split('/').filter(Boolean)[0] ?? '';
-}
-
 export function SentioNav({ tabs }: { tabs: SentioTab[] }) {
+  // Without basePath; a page belongs to the tab named by its first segment, else to Guides
   const pathname = usePathname();
-  const current = segmentOf(pathname);
+  const first = pathname.split('/').filter(Boolean)[0] ?? '';
+  const current = tabs.some((tab) => tab.segment && tab.segment === first) ? first : '';
 
   return (
     <header className="sentio-nav hidden md:flex">
-      <Link href="/docs" aria-label="Sentio" className="shrink-0 pe-2 ps-1">
-        <SentioLogo />
-      </Link>
+      <SentioHomeLink className="shrink-0 pe-2 ps-1" />
 
       <nav className="sentio-nav-tabs ms-2">
         {tabs.map((tab) => {
@@ -55,7 +52,7 @@ export function SentioNav({ tabs }: { tabs: SentioTab[] }) {
               </Link>
             );
           }
-          const seg = segmentOf(tab.url);
+          const seg = tab.segment ?? '';
           const active = seg === current;
           return (
             <Link

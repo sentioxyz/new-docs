@@ -1,0 +1,4 @@
+# Workers static assets headers. Copied to the asset root (.open-next/assets) by
+# `npm run build:cf`; under public/ it would land in assets/docs/ (basePath) and be ignored.
+/docs/_next/static/*
+  Cache-Control: public,max-age=31536000,immutable

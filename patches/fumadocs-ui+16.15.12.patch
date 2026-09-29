@@ -1,0 +1,22 @@
+diff --git a/node_modules/fumadocs-ui/dist/layouts/shared/page-actions.js b/node_modules/fumadocs-ui/dist/layouts/shared/page-actions.js
+index 74b0c12..0810681 100644
+--- a/node_modules/fumadocs-ui/dist/layouts/shared/page-actions.js
++++ b/node_modules/fumadocs-ui/dist/layouts/shared/page-actions.js
+@@ -47,7 +47,7 @@ function ViewOptionsPopover({ markdownUrl, githubUrl, ...props }) {
+ 	const pathname = usePathname();
+ 	const t = useTranslations({ note: "page actions" });
+ 	const items = useMemo(() => {
+-		const pageUrl = typeof window === "undefined" ? pathname : new URL(pathname, window.location.origin);
++		const pageUrl = typeof window === "undefined" ? withBasePath(pathname) : new URL(withBasePath(pathname), window.location.origin);
+ 		const q = t("Read {url}, I want to ask questions about it.", { variables: { url: String(pageUrl) } });
+ 		return [
+ 			githubUrl && {
+@@ -193,7 +193,7 @@ function ViewOptionsPopover({ markdownUrl, githubUrl, ...props }) {
+ }
+ function withBasePath(href) {
+ 	if (href.match(/^\w+:/) || href.startsWith("//")) return href;
+-	return (typeof import.meta.env !== "undefined" && typeof import.meta.env.BASE_URL === "string" ? import.meta.env.BASE_URL.replace(/\/$/, "") : "") + href;
++	return (process.env.__NEXT_ROUTER_BASEPATH || (typeof import.meta.env !== "undefined" && typeof import.meta.env.BASE_URL === "string" ? import.meta.env.BASE_URL.replace(/\/$/, "") : "")) + href;
+ }
+ //#endregion
+ export { MarkdownCopyButton, ViewOptionsPopover };

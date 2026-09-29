@@ -52,7 +52,9 @@ function rewriteUrl(url) {
   const hash = frag ? `#${frag}` : '';
   let to = null;
   let d;
-  if (/^\/(docs|reference)\/[^/]+$/.test(p)) to = p;
+  // Guides moved to the basePath root: /docs/<slug> -> /<slug>
+  if ((d = p.match(/^\/docs\/([^/]+)$/))) to = `/${d[1]}`;
+  else if (/^\/reference\/[^/]+$/.test(p)) to = p;
   else if ((d = p.match(/^\/(?:update\/)?changelog\/([^/]+)$/))) to = `/changelog/${d[1]}`;
   if (!to) {
     console.warn(`  ! unresolved link, kept as is: ${url}`);

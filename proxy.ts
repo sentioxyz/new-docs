@@ -3,7 +3,8 @@ import { isMarkdownPreferred, rewritePath } from 'fumadocs-core/negotiation';
 import { docsContentRoute } from '@/lib/shared';
 
 /**
- * Docs are served from the site root, so the pattern must start with `{/*path}`.
+ * Docs are served from the basePath root (`request.nextUrl.pathname` excludes basePath),
+ * so the pattern must start with `{/*path}`.
  * `/{/*path}` would make path-to-regexp treat the leading slash as a literal and
  * only match `/`, silently breaking content negotiation for every page.
  */
@@ -24,6 +25,13 @@ const { rewrite: rewriteSuffix } = rewritePath(
 const NON_DOC_PREFIXES = ['/_next', '/og', '/llms', '/brand', '/fonts'];
 const NON_DOC_EXACT = ['/', '/api/search'];
 
+/** Rewrite target inside basePath: a bare `new URL(path, ...)` would drop it */
+function withinBasePath(request: NextRequest, pathname: string) {
+  const url = request.nextUrl.clone();
+  url.pathname = pathname;
+  return url;
+}
+
 function isNonDocPath(pathname: string) {
   return (
     NON_DOC_EXACT.includes(pathname) ||
@@ -38,14 +46,14 @@ export default function proxy(request: NextRequest) {
 
   const result = rewriteSuffix(pathname);
   if (result) {
-    return NextResponse.rewrite(new URL(result, request.nextUrl));
+    return NextResponse.rewrite(withinBasePath(request, result));
   }
 
   if (isMarkdownPreferred(request)) {
     const result = rewriteDocs(pathname);
 
     if (result) {
-      return NextResponse.rewrite(new URL(result, request.nextUrl), {
+      return NextResponse.rewrite(withinBasePath(request, result), {
         // this URL has two representations, selected by `Accept`
         headers: { Vary: 'Accept' },
       });
