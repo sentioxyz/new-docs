@@ -5,7 +5,7 @@ import localFont from 'next/font/local';
 import { DocsLayout } from 'fumadocs-ui/layouts/docs';
 import { source } from '@/lib/source';
 import { baseOptions } from '@/lib/layout.shared';
-import { basePath, SENTIO_TABS } from '@/lib/shared';
+import { basePath, SENTIO_TABS, SITE_DESCRIPTION } from '@/lib/shared';
 import { SentioNav } from '@/components/sentio-nav';
 import { SentioSidebarGroup } from '@/components/sentio-sidebar-group';
 import { SentioThemeSwitch } from '@/components/sentio-theme-switch';
@@ -46,8 +46,7 @@ export const metadata: Metadata = {
     default: 'Sentio Docs',
     template: '%s | Sentio Docs',
   },
-  description:
-    'Developer-First, AI-Powered Modular Web3 Data Infrastructure. Documentation for the Sentio decentralized data and compute network.',
+  description: SITE_DESCRIPTION,
   icons: {
     icon: `${basePath}/brand/favicon.ico`,
   },

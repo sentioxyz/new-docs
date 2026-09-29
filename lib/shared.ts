@@ -2,6 +2,10 @@ import { createGetUrl } from 'fumadocs-core/source';
 
 export const appName = 'Sentio';
 
+/** Keep in sync with the description on the main website (www.sentio.xyz) */
+export const SITE_DESCRIPTION =
+  'Monitor. Analyze. Diagnose. All In One Place. End-to-end observability platform to help you gain insights, secure assets and troubleshoot transactions for your decentralized applications.';
+
 /**
  * Next.js prefixes links, redirects and assets with basePath; use it only for URLs it does
  * not (fetch calls, raw `<img>` in MDX, links in llms.txt).
