@@ -627,6 +627,12 @@ body::after {
   background-color: var(--s-bg);
 }
 
+/* The floating expand/search buttons shown while collapsed sit over page content too */
+[data-sidebar-panel] {
+  background-color: var(--s-bg) !important;
+  border-color: var(--s-hairline) !important;
+}
+
 /* The logo is already in the top nav */
 #nd-sidebar a:has(> .sentio-logo) {
   display: none;
