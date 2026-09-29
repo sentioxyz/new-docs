@@ -7,6 +7,7 @@ import {
   BookOpen,
   Code2,
   History,
+  Plug,
   Package,
 } from 'lucide-react';
 import type { ReactNode } from 'react';
@@ -23,6 +24,7 @@ export interface SentioTab {
 const TAB_ICONS: Record<string, ReactNode> = {
   reference: <Code2 className="size-4" />,
   '': <BookOpen className="size-4" />,
+  connect: <Plug className="size-4" />,
   changelog: <History className="size-4" />,
 };
 

@@ -1,0 +1,114 @@
+---
+title: "🛠️ Tools reference"
+description: "Every MCP tool Sentio Connect exposes, with arguments and results"
+---
+
+Sentio Connect exposes nine tools. Seven are read-only; two (`add_wallet_address`, `remove_wallet_address`) change your tracked-address list and need a connection with the `mcp:write` scope. Each tool belongs to a [capability](/connect/dashboard#data-your-assistant-can-read) you can turn off.
+
+You don't call these tools yourself — your assistant picks them based on your question. This page helps you understand what the assistant can do and write better prompts.
+
+## Common arguments
+
+| Argument | Format |
+| --- | --- |
+| `address` | EVM: a `0x` address (40 hex chars) or an ENS name such as `vitalik.eth`. Sui: a `0x` address (64 hex chars). |
+| `chain` | `1` (Ethereum), `56` (BNB Chain), `8453` (Base), `42161` (Arbitrum) or `sui_mainnet`. Defaults to `1` where optional. |
+| `token` | EVM: the token contract address (omit for the chain's native coin). Sui: the coin type, such as `0x2::sui::SUI` — always required on Sui. |
+| `range` | `24h` (13 points, every 2 hours) or `7d` (15 points, every 12 hours). Defaults to `24h`. |
+
+## Wallet & balances
+
+### `get_wallet_balances`
+
+**Capability:** Token balances · read-only
+
+Native coin and token balances, each valued in USD.
+
+| Call with | Returns |
+| --- | --- |
+| `address` + `chain` | That wallet on that chain |
+| `address` + a list of chains | That wallet on several chains in one call (EVM chains together, or `sui_mainnet` alone) |
+| `address` only | That wallet on every chain it's tracked on (every chain of its family if untracked) |
+| No arguments | Every tracked wallet, with a grand total |
+
+Each token row includes `symbol`, `address`, `decimals`, `amount`, `price` and `value`.
+
+### `get_token_balance_history`
+
+**Capability:** Token balances · read-only
+
+How one wallet's balance of one token changed over the last 24 hours or 7 days.
+
+- **Arguments:** `address`, `chain`, `symbol`, `token` (see above), `range`
+- **Returns:** a list of points with `timestamp`, `amount`, `priceUsd` (the price at that instant) and `valueUsd`
+
+<Callout type="info">
+  History takes one portfolio scan per point and can take tens of seconds. Assistants call it for one holding at a time.
+</Callout>
+
+### `get_portfolio_value`
+
+**Capability:** Portfolio value · read-only
+
+Total USD value across every tracked wallet, broken down per address and chain. Takes no arguments.
+
+### `list_wallet_addresses`
+
+**Capability:** Tracked addresses · read-only
+
+The wallets you track and the chain each is tracked on. Takes no arguments.
+
+### `add_wallet_address`
+
+**Capability:** Tracked addresses · **write** (`mcp:write`)
+
+Start tracking a wallet from the conversation.
+
+- **Arguments:** `address` (`0x` address, `.eth` name, or Sui address), `chain` (defaults to `1`)
+- ENS names are resolved before saving.
+- Idempotent: adding a wallet you already track returns the existing entry.
+
+### `remove_wallet_address`
+
+**Capability:** Tracked addresses · **write** (`mcp:write`), destructive
+
+Stop tracking a wallet from the conversation.
+
+- **Arguments:** `address`, optional `chain`. Pass `chain` to untrack the wallet on one chain; omit it to untrack it everywhere.
+- Returns the removed entries, or a "not tracked" error when nothing matched.
+- The tool is marked destructive, so assistants typically ask you to confirm before running it.
+
+## Prices
+
+### `get_token_price`
+
+**Capability:** Token prices · read-only
+
+USD spot price for a token.
+
+- **By symbol:** `symbol`, for example `ETH` or `SUI`
+- **By token:** `address` + `chain` — a contract address on EVM chains, or a coin type such as `0x2::sui::SUI` on Sui
+
+## DeFi positions
+
+### `get_defi_positions`
+
+**Capability:** DeFi positions · read-only
+
+Lending, staking, liquidity and reward positions across every chain the Sentio portfolio API covers.
+
+- **Arguments:** optional `address`. Omit it to get every tracked wallet.
+- **Returns:** per-protocol totals (asset, debt and reward value) and individual positions, each with `protocolId`, `protocolName`, `chain`, `label`, `valueUsd` and its asset / debt / reward components.
+
+### `get_defi_position_history`
+
+**Capability:** DeFi positions · read-only
+
+How the size of one DeFi position changed over the last 24 hours or 7 days, valued at **today's** prices — so the curve shows deposits, withdrawals, accrued debt and rewards, not price moves.
+
+- **Arguments:** `address`, `chain`, `protocol` (the position's `protocolId`), `label`, `range`
+- Like token history, this is slow and runs for one position at a time.
+
+## Interactive cards
+
+In hosts that support [MCP Apps](https://modelcontextprotocol.io/), such as Claude and ChatGPT, `get_wallet_balances` and `get_defi_positions` render as interactive cards. Click a row to chart that holding's history without leaving the conversation. Other hosts, such as Codex, show the same data as text.

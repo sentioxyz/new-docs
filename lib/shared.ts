@@ -29,6 +29,7 @@ export const docsContentRoute = '/llms.mdx';
 export const SENTIO_TABS = [
   { title: 'Guides', url: '/readme', segment: '' },
   { title: 'API Reference', url: '/reference', segment: 'reference' },
+  { title: 'Sentio Connect', url: '/connect', segment: 'connect' },
   { title: 'Changelog', url: '/changelog', segment: 'changelog' },
   { title: 'SDK Reference', url: 'https://sdk.sentio.xyz/' },
 ] as const;

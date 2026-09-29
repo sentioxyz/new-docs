@@ -1,0 +1,56 @@
+---
+title: "🔌 Sentio Connect"
+description: "Give your AI assistant live access to your wallets, balances and DeFi positions"
+---
+
+Sentio Connect is a hosted [MCP](https://modelcontextprotocol.io/) server that lets AI assistants such as **Claude**, **ChatGPT** and **OpenAI Codex** read on-chain portfolio data through Sentio. Connect it once, and you can ask your assistant things like:
+
+- "What's in my wallets right now, and what is it all worth?"
+- "Show my DeFi positions across Ethereum and Sui."
+- "How did my ETH balance change over the last 7 days?"
+- "What's the price of WAL?"
+- "Start tracking `vitalik.eth`."
+
+Every answer is backed by live data from the Sentio portfolio and price APIs — the assistant doesn't guess.
+
+![Sentio Connect home page](/assets/connect/home-overview.jpg)
+
+## How it works
+
+1. You sign in at [connect.sentio.xyz](https://connect.sentio.xyz) and add the wallet addresses you want to follow.
+2. You add Sentio Connect to your assistant as a custom connector (MCP server) using `https://connect.sentio.xyz/v1/mcp`.
+3. The assistant asks for permission through a standard OAuth consent page. After you approve, it can call Sentio Connect's tools during any conversation.
+4. You decide which kinds of data the assistant can read — balances, prices, portfolio value, tracked addresses, DeFi positions — with per-capability toggles. Every tool call is audited.
+
+## What your assistant can do
+
+| Capability | What it covers | Tools |
+| --- | --- | --- |
+| Token balances | Native and token balances valued in USD, plus 24h / 7d balance history | `get_wallet_balances`, `get_token_balance_history` |
+| Token prices | USD spot price by symbol or contract address | `get_token_price` |
+| Portfolio value | Total USD value across all tracked wallets and chains | `get_portfolio_value` |
+| Tracked addresses | List, add and remove the wallets you follow | `list_wallet_addresses`, `add_wallet_address`, `remove_wallet_address` |
+| DeFi positions | Lending, staking, LP and reward positions, plus 24h / 7d position history | `get_defi_positions`, `get_defi_position_history` |
+
+See the [Tools reference](/connect/tools) for arguments and return values.
+
+## Supported chains
+
+| Chain | Chain ID |
+| --- | --- |
+| Ethereum | `1` |
+| BNB Chain | `56` |
+| Base | `8453` |
+| Arbitrum | `42161` |
+| Sui | `sui_mainnet` |
+
+A wallet is either an EVM wallet (tracked on one or more EVM chains) or a Sui wallet.
+
+## Next steps
+
+<Cards>
+  <Card title="Quickstart" href="/connect/quickstart" description="Sign in, add a wallet and ask your first question in five minutes." />
+  <Card title="Connect your assistant" href="/connect/connect-your-assistant" description="Setup for Claude, ChatGPT, Codex and other MCP clients." />
+  <Card title="Tools reference" href="/connect/tools" description="Every tool your assistant can call, with arguments and results." />
+  <Card title="Security & privacy" href="/connect/security-and-privacy" description="What the assistant can and cannot see or change." />
+</Cards>

@@ -2,6 +2,7 @@
   "pages": [
     "api",
     "guides",
+    "connect",
     "changelog"
   ]
 }
