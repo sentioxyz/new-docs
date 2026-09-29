@@ -2,15 +2,14 @@ import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { basePath } from './base-path.mjs';
 
 /*
- * Ask AI proxy to an AgentConnect agent (Agent chat API).
+ * Ask AI proxy to an AgentConnect agent (AI SDK chat endpoint).
  *
- * The browser only ever talks to /api/chat. This module holds the
- * `agent:chat` key, exchanges it for a short-lived webchat token, and streams
- * the relay's AI SDK UI-message response back unchanged. Neither the key nor
- * the token ever reaches the client.
+ * The browser only ever talks to /api/chat. This module holds the API key,
+ * pins each tab to one conversation (`chatId`), and streams the relay's AI SDK
+ * UI-message response back unchanged. The key never reaches the client.
  *
  * Env (server-only; `wrangler secret put` in production, `.env.local` for
- * `next dev`): AGENTCONNECT_API_URL, AGENTCONNECT_API_KEY, AGENTCONNECT_ORG_ID,
+ * `next dev`): AGENTCONNECT_API_URL (relay base, no path), AGENTCONNECT_API_KEY,
  * AGENTCONNECT_AGENT_ID.
  */
 
@@ -19,13 +18,6 @@ export const TAB_HEADER = 'x-ask-ai-tab';
 const TAB_ID = /^[a-z0-9]{8,32}$/;
 const CONVERSATION_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const COOKIE_PREFIX = 'ask_ai_conv_';
-
-type Minted = {
-  token: string;
-  relayUrl: string;
-  conversationId: string;
-  expiresAt: string;
-};
 
 class AskAIError extends Error {
   constructor(
@@ -36,52 +28,15 @@ class AskAIError extends Error {
   }
 }
 
-// Tokens live 5 minutes; reuse one per conversation until 30s before expiry
-const tokens = new Map<string, Minted>();
-const EXPIRY_MARGIN_MS = 30_000;
-
-function isFresh(minted: Minted) {
-  return Date.parse(minted.expiresAt) - EXPIRY_MARGIN_MS > Date.now();
-}
-
 function config() {
-  const { AGENTCONNECT_API_URL, AGENTCONNECT_API_KEY, AGENTCONNECT_ORG_ID, AGENTCONNECT_AGENT_ID } =
-    process.env;
-  if (
-    !AGENTCONNECT_API_URL ||
-    !AGENTCONNECT_API_KEY ||
-    !AGENTCONNECT_ORG_ID ||
-    !AGENTCONNECT_AGENT_ID
-  ) {
+  const { AGENTCONNECT_API_URL, AGENTCONNECT_API_KEY, AGENTCONNECT_AGENT_ID } = process.env;
+  if (!AGENTCONNECT_API_URL || !AGENTCONNECT_API_KEY || !AGENTCONNECT_AGENT_ID) {
     throw new AskAIError(503, 'Ask AI is not configured on this site.');
   }
   return {
-    api: AGENTCONNECT_API_URL.replace(/\/$/, ''),
+    endpoint: `${AGENTCONNECT_API_URL.replace(/\/$/, '')}/ai-sdk/agents/${encodeURIComponent(AGENTCONNECT_AGENT_ID)}/chat`,
     key: AGENTCONNECT_API_KEY,
-    orgId: AGENTCONNECT_ORG_ID,
-    agentId: AGENTCONNECT_AGENT_ID,
   };
-}
-
-async function mint(conversationId?: string): Promise<Minted> {
-  const cached = conversationId ? tokens.get(conversationId) : undefined;
-  if (cached && isFresh(cached)) return cached;
-
-  const { api, key, orgId, agentId } = config();
-  const res = await fetch(
-    `${api}/orgs/${encodeURIComponent(orgId)}/agents/${encodeURIComponent(agentId)}/webchat/token`,
-    {
-      method: 'POST',
-      headers: { authorization: `Bearer ${key}`, 'content-type': 'application/json' },
-      body: JSON.stringify(conversationId ? { conversationId } : {}),
-    },
-  );
-  if (!res.ok) throw new AskAIError(res.status, `token mint failed: ${res.status}`);
-
-  const minted = (await res.json()) as Minted;
-  for (const [id, entry] of tokens) if (!isFresh(entry)) tokens.delete(id);
-  tokens.set(minted.conversationId, minted);
-  return minted;
 }
 
 // Messages shown in the panel; upstream bodies are never forwarded verbatim
@@ -182,34 +137,31 @@ export async function handleChat(req: Request): Promise<Response> {
   const bound = readCookie(req, cookieName);
   const userTurns = body.messages.filter((m) => m.role === 'user').length;
 
-  let minted: Minted;
+  // A lone first question (new chat, or after Clear Chat) starts a new conversation
+  const conversationId =
+    userTurns > 1 && bound && CONVERSATION_ID.test(bound) ? bound : crypto.randomUUID();
+
+  let cfg: ReturnType<typeof config>;
   try {
-    if (userTurns > 1 && bound && CONVERSATION_ID.test(bound)) {
-      // An unknown (404) or moved (409) conversation starts over; other failures surface
-      minted = await mint(bound).catch((err: unknown) => {
-        if (err instanceof AskAIError && (err.status === 404 || err.status === 409)) return mint();
-        throw err;
-      });
-    } else {
-      // A lone first question (new chat, or after Clear Chat) starts a new conversation
-      minted = await mint();
-    }
+    cfg = config();
   } catch (err) {
     if (err instanceof AskAIError) {
       console.error(`[ask-ai] ${err.message}`);
-      return errorResponse(err.status, err.status === 503 ? err.message : undefined);
+      return errorResponse(err.status, err.message);
     }
-    console.error('[ask-ai] token mint error', err);
     return errorResponse(502);
   }
 
-  const { token, relayUrl, conversationId } = minted;
   let upstream: Response;
   try {
-    upstream = await fetch(`${relayUrl.replace(/\/$/, '')}/ai-sdk/chat/${conversationId}`, {
+    upstream = await fetch(cfg.endpoint, {
       method: 'POST',
-      headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },
-      body: JSON.stringify({ ...body, messages: foldClientContext(body.messages) }),
+      headers: { authorization: `Bearer ${cfg.key}`, 'content-type': 'application/json' },
+      body: JSON.stringify({
+        ...body,
+        id: conversationId,
+        messages: foldClientContext(body.messages),
+      }),
       signal: req.signal,
     });
   } catch (err) {
@@ -220,8 +172,6 @@ export async function handleChat(req: Request): Promise<Response> {
   const cookie = `${cookieName}=${conversationId}; Path=${basePath}/api/chat; HttpOnly; Secure; SameSite=Lax`;
   if (!upstream.ok) {
     console.error(`[ask-ai] relay responded ${upstream.status}`);
-    // The token may be stale for this conversation; mint a fresh one next time
-    if (upstream.status === 401 || upstream.status === 403) tokens.delete(conversationId);
     const res = errorResponse(upstream.status);
     res.headers.append('set-cookie', cookie);
     return res;
