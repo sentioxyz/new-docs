@@ -2,6 +2,9 @@ import { createGetUrl } from 'fumadocs-core/source';
 
 export const appName = 'Sentio';
 
+export const SITE_DESCRIPTION =
+  'Developer-First, AI-Powered Modular Web3 Data Infrastructure. Documentation for the Sentio decentralized data and compute network.';
+
 /** Empty because docs are served from the site root (`/docs/...`, `/reference/...`). */
 export const docsRoute = '';
 export const docsImageRoute = '/og';
