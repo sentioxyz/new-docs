@@ -17,7 +17,13 @@ import { cn } from '@/lib/cn';
 import { basePath } from '@/lib/base-path.mjs';
 import { buttonVariants } from '@/components/ui/button';
 import { useChat, type UseChatHelpers } from '@ai-sdk/react';
-import { DefaultChatTransport, type UIMessage } from 'ai';
+import {
+  DefaultChatTransport,
+  lastAssistantMessageIsCompleteWithApprovalResponses,
+  lastAssistantMessageIsCompleteWithToolCalls,
+  type UIMessage,
+} from 'ai';
+import { ASK_TOOL, DISMISSED, openAgentQuestions } from '@/lib/agent-questions';
 import {
   Conversation,
   ConversationContent,
@@ -170,7 +176,27 @@ export function AISearch({ children }: { children: ReactNode }) {
       api: `${basePath}/api/chat`,
       headers: () => ({ [TAB_HEADER]: getTabId() }),
     }),
+    // The refusals below go back at once, so the agent's turn carries on without them
+    sendAutomaticallyWhen: (options) =>
+      lastAssistantMessageIsCompleteWithApprovalResponses(options) ||
+      lastAssistantMessageIsCompleteWithToolCalls(options),
   });
+
+  // Nobody here answers the agent: dismiss its questions and refuse its tool approvals
+  const { messages, status, addToolOutput, addToolApprovalResponse } = chat;
+  useEffect(() => {
+    const last = messages.at(-1);
+    if (status !== 'ready' || last?.role !== 'assistant') return;
+    const { dismiss, refuse } = openAgentQuestions(last.parts);
+    for (const toolCallId of dismiss)
+      void addToolOutput({
+        state: 'output-error',
+        tool: ASK_TOOL as never,
+        toolCallId,
+        errorText: DISMISSED,
+      });
+    for (const id of refuse) void addToolApprovalResponse({ id, approved: false });
+  }, [messages, status, addToolOutput, addToolApprovalResponse]);
 
   return (
     <Context value={useMemo(() => ({ chat, open, setOpen }), [chat, open])}>{children}</Context>

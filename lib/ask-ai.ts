@@ -1,5 +1,6 @@
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { basePath } from './base-path.mjs';
+import { refuseAgentAnswers } from './agent-questions';
 
 /*
  * Ask AI proxy to an AgentConnect agent (AI SDK chat endpoint).
@@ -40,12 +41,14 @@ function config() {
 }
 
 // Messages shown in the panel; upstream bodies are never forwarded verbatim
-function describe(status: number): string {
+function describe(status: number, reason?: string): string {
   switch (status) {
     case 404:
       return 'This conversation has expired. Clear the chat to start a new one.';
     case 409:
-      return 'The assistant is still answering the previous question. Please wait a moment.';
+      return reason === 'turn_ended'
+        ? 'The assistant stopped waiting on this question. Please ask again.'
+        : 'The assistant is still answering the previous question. Please wait a moment.';
     case 413:
       return 'Your message is too long. Please shorten it and try again.';
     case 429:
@@ -89,6 +92,18 @@ async function withinRateLimit(req: Request): Promise<boolean> {
 
 type Part = { type: string; text?: string; data?: unknown };
 type Message = { role: string; parts?: Part[] };
+
+/*
+ * A request whose last message is the assistant's answers the agent's
+ * questions and tool approvals, continuing its turn. Ask AI refuses them all
+ * (lib/agent-questions.ts); enforce that here too, since the client is not
+ * trusted and this key must never grant an approval or bother the editors.
+ */
+function refuseAnswers(messages: Message[]): Message[] {
+  const last = messages.at(-1);
+  if (last?.role !== 'assistant' || !last.parts) return messages;
+  return [...messages.slice(0, -1), { ...last, parts: refuseAgentAnswers(last.parts) }];
+}
 
 /*
  * The panel sends the reader's location as a `data-client` part. Fold it into
@@ -136,10 +151,14 @@ export async function handleChat(req: Request): Promise<Response> {
   const cookieName = COOKIE_PREFIX + (TAB_ID.test(tab) ? tab : 'default');
   const bound = readCookie(req, cookieName);
   const userTurns = body.messages.filter((m) => m.role === 'user').length;
+  const answering = body.messages.at(-1)?.role === 'assistant';
 
-  // A lone first question (new chat, or after Clear Chat) starts a new conversation
+  // A lone first question (new chat, or after Clear Chat) starts a new conversation;
+  // answers to the agent's questions continue the turn, even on the first question
   const conversationId =
-    userTurns > 1 && bound && CONVERSATION_ID.test(bound) ? bound : crypto.randomUUID();
+    (userTurns > 1 || answering) && bound && CONVERSATION_ID.test(bound)
+      ? bound
+      : crypto.randomUUID();
 
   let cfg: ReturnType<typeof config>;
   try {
@@ -160,7 +179,7 @@ export async function handleChat(req: Request): Promise<Response> {
       body: JSON.stringify({
         ...body,
         id: conversationId,
-        messages: foldClientContext(body.messages),
+        messages: refuseAnswers(foldClientContext(body.messages)),
       }),
       signal: req.signal,
     });
@@ -171,8 +190,12 @@ export async function handleChat(req: Request): Promise<Response> {
 
   const cookie = `${cookieName}=${conversationId}; Path=${basePath}/api/chat; HttpOnly; Secure; SameSite=Lax`;
   if (!upstream.ok) {
-    console.error(`[ask-ai] relay responded ${upstream.status}`);
-    const res = errorResponse(upstream.status);
+    const reason = await upstream
+      .json()
+      .then((b: { reason?: unknown }) => (typeof b?.reason === 'string' ? b.reason : undefined))
+      .catch(() => undefined);
+    console.error(`[ask-ai] relay responded ${upstream.status}${reason ? ` (${reason})` : ''}`);
+    const res = errorResponse(upstream.status, describe(upstream.status, reason));
     res.headers.append('set-cookie', cookie);
     return res;
   }
