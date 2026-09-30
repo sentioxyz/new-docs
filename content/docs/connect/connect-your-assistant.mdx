@@ -1,6 +1,6 @@
 ---
 title: "🤖 Connect your assistant"
-description: "Add Sentio Connect to Claude, ChatGPT, Codex or any MCP client"
+description: "Add Sentio Connect to Claude, ChatGPT, Codex, Grok or any MCP client"
 ---
 
 import { Tab, Tabs } from 'fumadocs-ui/components/tabs';
@@ -13,30 +13,35 @@ https://connect.sentio.xyz/v1/mcp
 
 You never paste an API key. The first time your assistant connects, it sends you to the Sentio Connect consent page, where you sign in (if you aren't already) and click **Allow connection**.
 
-<Tabs items={['Claude', 'ChatGPT', 'Codex', 'Other MCP clients']}>
-<Tab value="Claude">
+<Tabs items={['Claude', 'ChatGPT', 'Grok', 'Other MCP clients']} updateAnchor>
+<Tab value="Claude" id="claude">
 
 Works in Claude on the web, Claude Desktop and the Claude mobile apps.
 
-1. Open **Settings → Connectors** and click **Add custom connector**.
-2. Enter a name (for example `Sentio`) and the URL `https://connect.sentio.xyz/v1/mcp`.
-3. Click **Connect**. A browser window opens the Sentio Connect consent page — click **Allow connection**.
-4. In a conversation, make sure the Sentio connector is enabled in the tools menu, then ask a question about your wallets.
+![Adding Sentio Connect as a custom connector in Claude](/assets/connect-claude.gif)
+
+1. Open **Settings → Connectors**, click **Add** and choose **Add custom connector**.
+2. Enter a name (for example `Sentio Connect`) and the URL `https://connect.sentio.xyz/v1/mcp`, then click **Continue**.
+3. Under **OAuth client**, keep **Register automatically** selected and click **Add**.
+4. Click **Connect**. A browser window opens the Sentio Connect consent page — click **Allow connection**.
+5. In a conversation, make sure the Sentio connector is enabled in the tools menu, then ask a question about your wallets.
 
 Claude renders token balances and DeFi positions as interactive cards. Click a row in a card to chart that holding's 24h or 7d history.
 
 </Tab>
-<Tab value="ChatGPT">
+<Tab value="ChatGPT" id="chatgpt">
 
-1. Open **Settings → Apps & Connectors** and add a new connector.
-2. Enter the URL `https://connect.sentio.xyz/v1/mcp` and choose **OAuth** as the authentication method.
-3. Complete the Sentio Connect consent page by clicking **Allow connection**.
-4. Enable the connector in a conversation and ask a question about your wallets.
+![Adding Sentio Connect as an MCP app in ChatGPT](/assets/connect-chatgpt.gif)
+
+1. Open **Plugins**, click **Add** and choose **Create MCP App**.
+2. Enter a name (for example `Sentio Connect`), set the **Server URL** to `https://connect.sentio.xyz/v1/mcp` and choose **OAuth** as the authentication method.
+3. Check **I understand and want to continue**, then click **Create**.
+4. Click **Continue to Sentio Connect**. On the Sentio Connect consent page, click **Allow connection**.
+5. Enable Sentio Connect in a conversation and ask a question about your wallets.
 
 Like Claude, ChatGPT shows token balances and DeFi positions as interactive cards.
 
-</Tab>
-<Tab value="Codex">
+### Codex
 
 Point Codex straight at the server and log in:
 
@@ -55,7 +60,19 @@ Or install the Sentio Connect plugin, which bundles the server entry with a skil
 Codex doesn't render interactive cards; tool results appear as text.
 
 </Tab>
-<Tab value="Other MCP clients">
+<Tab value="Grok" id="grok">
+
+![Adding Sentio Connect as a custom connector in Grok](/assets/connect-grok.gif)
+
+1. Go to [grok.com/connectors](https://grok.com/connectors), click **New Connector** and choose **Custom**.
+2. Enter a name (for example `Sentio Connect`) and the **Server URL** `https://connect.sentio.xyz/v1/mcp`, then click **Add Connector**.
+3. A Sentio Connect window opens. Click **Allow connection**.
+4. Grok discovers the Sentio tools automatically. Enable the connector in a conversation and ask a question about your wallets.
+
+On Grok Business and Enterprise, an admin may need to allow custom connectors first.
+
+</Tab>
+<Tab value="Other MCP clients" id="other-mcp-clients">
 
 Configure a remote MCP server with:
 
