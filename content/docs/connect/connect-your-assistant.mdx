@@ -1,0 +1,97 @@
+---
+title: "🤖 Connect your assistant"
+description: "Add Sentio Connect to Claude, ChatGPT, Codex or any MCP client"
+---
+
+import { Tab, Tabs } from 'fumadocs-ui/components/tabs';
+
+Sentio Connect is a remote MCP server that speaks **Streamable HTTP** and **OAuth 2.1**. Any assistant that supports remote MCP servers with OAuth can use it. The server URL is always:
+
+```text
+https://connect.sentio.xyz/v1/mcp
+```
+
+You never paste an API key. The first time your assistant connects, it sends you to the Sentio Connect consent page, where you sign in (if you aren't already) and click **Allow connection**.
+
+<Tabs items={['Claude', 'ChatGPT', 'Codex', 'Other MCP clients']}>
+<Tab value="Claude">
+
+Works in Claude on the web, Claude Desktop and the Claude mobile apps.
+
+1. Open **Settings → Connectors** and click **Add custom connector**.
+2. Enter a name (for example `Sentio`) and the URL `https://connect.sentio.xyz/v1/mcp`.
+3. Click **Connect**. A browser window opens the Sentio Connect consent page — click **Allow connection**.
+4. In a conversation, make sure the Sentio connector is enabled in the tools menu, then ask a question about your wallets.
+
+Claude renders token balances and DeFi positions as interactive cards. Click a row in a card to chart that holding's 24h or 7d history.
+
+</Tab>
+<Tab value="ChatGPT">
+
+1. Open **Settings → Apps & Connectors** and add a new connector.
+2. Enter the URL `https://connect.sentio.xyz/v1/mcp` and choose **OAuth** as the authentication method.
+3. Complete the Sentio Connect consent page by clicking **Allow connection**.
+4. Enable the connector in a conversation and ask a question about your wallets.
+
+Like Claude, ChatGPT shows token balances and DeFi positions as interactive cards.
+
+</Tab>
+<Tab value="Codex">
+
+Point Codex straight at the server and log in:
+
+```bash
+codex mcp add sentio --url https://connect.sentio.xyz/v1/mcp
+codex mcp login sentio
+```
+
+Or install the Sentio Connect plugin, which bundles the server entry with a skill that teaches Codex when to use each tool:
+
+```text
+/plugin marketplace add sentioxyz/sentio-connector
+/plugin install sentio-connector@sentio
+```
+
+Codex doesn't render interactive cards; tool results appear as text.
+
+</Tab>
+<Tab value="Other MCP clients">
+
+Configure a remote MCP server with:
+
+| Setting | Value |
+| --- | --- |
+| Transport | Streamable HTTP |
+| URL | `https://connect.sentio.xyz/v1/mcp` |
+| Authentication | OAuth 2.1 (discovery + dynamic client registration + PKCE) |
+
+Clients that only support local (stdio) servers can bridge with [`mcp-remote`](https://www.npmjs.com/package/mcp-remote):
+
+```json
+{
+  "mcpServers": {
+    "sentio": {
+      "command": "npx",
+      "args": ["-y", "mcp-remote", "https://connect.sentio.xyz/v1/mcp"]
+    }
+  }
+}
+```
+
+</Tab>
+</Tabs>
+
+## Read-only vs. read-write connections
+
+A connection is granted one or both of these scopes:
+
+| Scope | Allows |
+| --- | --- |
+| `mcp:read` | All read tools: balances, prices, portfolio value, tracked addresses, DeFi positions and history |
+| `mcp:write` | Also `add_wallet_address` and `remove_wallet_address`, which change **only your own** tracked-address list |
+
+Most assistants request both. If a client asks only for `mcp:read`, the write tools are hidden from its tool list and rejected if called.
+
+## Disconnecting
+
+To revoke access, remove the connector in your assistant's settings. Access tokens expire after one hour and refresh tokens after 30 days, so an assistant that is no longer used loses access on its own.

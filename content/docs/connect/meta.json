@@ -1,0 +1,14 @@
+{
+  "title": "Sentio Connect",
+  "description": "Give your AI assistant live access to your wallets, balances and DeFi positions",
+  "root": true,
+  "pagesIndex": "index",
+  "pages": [
+    "quickstart",
+    "connect-your-assistant",
+    "dashboard",
+    "tools",
+    "security-and-privacy",
+    "troubleshooting"
+  ]
+}

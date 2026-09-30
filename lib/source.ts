@@ -24,11 +24,12 @@ const docs = defineDocs({
 
 /**
  * content/docs root folder (sidebar tab) -> first URL segment under basePath. Guides sit at
- * the root, so a guide slug must not be `reference` or `changelog`.
+ * the root, so a guide slug must not be `reference`, `connect` or `changelog`.
  */
 const TAB_ROUTES: Record<string, string> = {
   guides: '',
   api: 'reference',
+  connect: 'connect',
   changelog: 'changelog',
 };
 

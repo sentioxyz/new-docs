@@ -1,0 +1,31 @@
+---
+title: "🔒 Security & privacy"
+description: "What your assistant can and cannot see or change through Sentio Connect"
+---
+
+## What the assistant can access
+
+- **Public on-chain data** for the wallets you track or name in a conversation: balances, DeFi positions, prices and history.
+- **Your tracked-address list** — read it, and, with a read-write connection, add or remove entries.
+
+That's all. Sentio Connect has no tools that move funds, sign transactions, or change anything on-chain, and none that touch your Sentio projects, API keys, members or billing.
+
+## What you control
+
+- **Per-capability toggles.** Turn off any [capability](/connect/dashboard#data-your-assistant-can-read) and its tools stop working immediately.
+- **Read-only connections.** A connection granted only `mcp:read` can't see or call the write tools.
+- **Confirmation for destructive actions.** `remove_wallet_address` is flagged as destructive, so assistants that honor the flag ask before running it.
+- **Revocation.** Remove the connector from your assistant to cut off access.
+
+## How authorization works
+
+1. Your assistant discovers Sentio Connect's OAuth endpoints and registers itself.
+2. You sign in and see a consent page that names the assistant and the scope it requests. You choose **Allow connection** or **Deny**.
+3. Sentio Connect issues the assistant its own **revocable** access token (1 hour) and refresh token (30 days, rotated on every use). The assistant never receives a Sentio API key.
+4. On every tool call, Sentio Connect checks the token, scope, capability toggles and rate limit, and validates the arguments before calling Sentio.
+
+## Data handling
+
+- Tokens and authorization codes are stored only as SHA-256 hashes.
+- Every tool call is written to an audit log that never contains credentials.
+- Error messages returned to the assistant are sanitized and never include credentials or stack traces.

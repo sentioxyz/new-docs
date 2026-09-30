@@ -1,0 +1,38 @@
+---
+title: "🔍 Troubleshooting"
+description: "Fix common problems connecting and using Sentio Connect"
+---
+
+### The assistant says a capability is disabled
+
+You turned off the capability that tool depends on. Re-enable it under **Data your assistant can read** on the [Home page](https://connect.sentio.xyz), or on the **Tools** page.
+
+### `add_wallet_address` and `remove_wallet_address` are missing
+
+The connection is read-only (`mcp:read`). Remove the connector from your assistant and add it again, approving write access on the consent page.
+
+### The assistant reports an authorization error
+
+The connection's tokens expired or were revoked. Reconnect the connector in your assistant's settings. In Codex, run:
+
+```bash
+codex mcp login sentio
+```
+
+### The assistant reports a rate-limit error
+
+Tool calls are rate limited per 10-minute window. Wait a few minutes for the window to reset, then try again.
+
+### History says it isn't collected yet
+
+History is collected only for tracked wallets. Add the wallet on the Home page (or ask your assistant to track it); collection starts within the hour.
+
+### A wallet or token is missing
+
+- Check that the wallet is tracked on the right chain — an EVM address is tracked per chain.
+- Supported chains are Ethereum, BNB Chain, Base, Arbitrum and Sui.
+- Tokens without a price show no USD value, and **Hide < $1** hides dust; clear the checkbox to see everything.
+
+### History calls are slow
+
+Each history point is a separate portfolio scan, so a 24h or 7d series can take tens of seconds. Ask about one holding at a time.
