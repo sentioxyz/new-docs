@@ -206,5 +206,60 @@ export async function handleChat(req: Request): Promise<Response> {
     if (value) headers.set(name, value);
   }
   headers.append('set-cookie', cookie);
-  return new Response(upstream.body, { status: upstream.status, headers });
+  const stream = upstream.body?.pipeThrough(new TextDecoderStream()).pipeThrough(hideAgentWork());
+  return new Response(stream?.pipeThrough(new TextEncoderStream()), {
+    status: upstream.status,
+    headers,
+  });
+}
+
+// Agent internals (sandbox notices, reasoning, its shell/search steps) never reach the reader
+const HIDDEN_CHUNKS = new Set([
+  'data-notice',
+  'data-tool',
+  'reasoning-start',
+  'reasoning-delta',
+  'reasoning-end',
+]);
+
+/*
+ * Filters the relay's SSE UI-message stream: drops HIDDEN_CHUNKS and replaces
+ * error texts (which carry runtime internals) with a generic message. The
+ * agent's questions and approvals (dynamic tool chunks) pass through, since
+ * the panel must refuse them.
+ */
+function hideAgentWork(): TransformStream<string, string> {
+  let buffer = '';
+  const filter = (event: string): string | undefined => {
+    const data = event.startsWith('data: ') ? event.slice(6) : undefined;
+    // Keep comments (keepalives) and the [DONE] terminator
+    if (data === undefined || data === '[DONE]') return event;
+    let chunk: { type?: unknown; errorText?: unknown };
+    try {
+      chunk = JSON.parse(data);
+    } catch {
+      return event;
+    }
+    if (typeof chunk.type !== 'string' || HIDDEN_CHUNKS.has(chunk.type)) return undefined;
+    if (chunk.type === 'error') {
+      console.error(`[ask-ai] agent error: ${String(chunk.errorText)}`);
+      return `data: ${JSON.stringify({ type: 'error', errorText: describe(502) })}`;
+    }
+    return event;
+  };
+  return new TransformStream({
+    transform(text, controller) {
+      buffer += text;
+      const events = buffer.split('\n\n');
+      buffer = events.pop() ?? '';
+      for (const event of events) {
+        const kept = filter(event);
+        if (kept !== undefined) controller.enqueue(`${kept}\n\n`);
+      }
+    },
+    flush(controller) {
+      const kept = buffer && filter(buffer);
+      if (kept) controller.enqueue(kept);
+    },
+  });
 }
