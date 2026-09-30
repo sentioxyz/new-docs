@@ -47,10 +47,6 @@ export type ChatUIMessage = UIMessage<
     client: {
       location: string;
     };
-    // Streamed by the agent: status notices while the sandbox starts
-    notice: {
-      text: string;
-    };
   }
 >;
 
@@ -375,16 +371,9 @@ function AISearchPanelList() {
   const visible = messages.filter((msg) => msg.role !== 'system');
   const last = visible.at(-1);
   const busy = status === 'submitted' || status === 'streaming';
-  // Until the first reply text arrives, show the agent's latest status notice (sandbox start, ...)
+  // Until the first reply text arrives; the agent's own steps are never shown (lib/ask-ai.ts strips them)
   const waiting =
     busy && (last?.role === 'user' || !last?.parts.some((part) => part.type === 'text'));
-  const notice =
-    last?.role === 'assistant'
-      ? last.parts.findLast(
-          (part): part is Extract<typeof part, { type: 'data-notice' }> =>
-            part.type === 'data-notice',
-        )?.data.text
-      : undefined;
 
   return (
     <Conversation className="min-h-0">
@@ -409,7 +398,7 @@ function AISearchPanelList() {
           ))
         )}
         {waiting && (
-          <Shimmer className="text-sm">{notice?.replace(/^\W+/, '') || 'Thinking...'}</Shimmer>
+          <Shimmer className="text-sm">Thinking...</Shimmer>
         )}
         {error && (
           <div className="rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-sm">
